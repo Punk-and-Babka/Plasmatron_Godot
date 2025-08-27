@@ -1,0 +1,145 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|c:\\users\\pdw2\\desktop\\\u0432\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\burner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|solutionrelative:burner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|c:\\users\\pdw2\\desktop\\\u0432\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\scriptinterpreter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|solutionrelative:scriptinterpreter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|c:\\users\\pdw2\\desktop\\\u0432\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\speedinputhandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|solutionrelative:speedinputhandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|c:\\users\\pdw2\\desktop\\\u0432\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\coordinategrid.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|solutionrelative:coordinategrid.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|c:\\users\\pdw2\\desktop\\\u0432\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\uicontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|solutionrelative:uicontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|c:\\users\\pdw2\\desktop\\\u0432\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\portselectionwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|solutionrelative:portselectionwindow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|c:\\users\\pdw2\\desktop\\\u0432\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\blackpanel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D20EAA06-4340-4544-9E56-288980AB8240}|test2.csproj|solutionrelative:blackpanel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 1,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedHeight": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ScriptInterpreter.cs",
+              "DocumentMoniker": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\ScriptInterpreter.cs",
+              "RelativeDocumentMoniker": "ScriptInterpreter.cs",
+              "ToolTip": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\ScriptInterpreter.cs",
+              "RelativeToolTip": "ScriptInterpreter.cs",
+              "ViewState": "AgIAABQBAAAAAAAAAAAiwDABAABYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-31T20:37:39.168Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Burner.cs",
+              "DocumentMoniker": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\Burner.cs",
+              "RelativeDocumentMoniker": "Burner.cs",
+              "ToolTip": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\Burner.cs",
+              "RelativeToolTip": "Burner.cs",
+              "ViewState": "AgIAACcAAAAAAAAAAAAmwDgAAABLAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-10T08:27:55.112Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SpeedInputHandler.cs",
+              "DocumentMoniker": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\SpeedInputHandler.cs",
+              "RelativeDocumentMoniker": "SpeedInputHandler.cs",
+              "ToolTip": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\SpeedInputHandler.cs",
+              "RelativeToolTip": "SpeedInputHandler.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-23T07:44:25.048Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "UIController.cs",
+              "DocumentMoniker": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\UIController.cs",
+              "RelativeDocumentMoniker": "UIController.cs",
+              "ToolTip": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\UIController.cs",
+              "RelativeToolTip": "UIController.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-10T16:17:53.103Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "PortSelectionWindow.cs",
+              "DocumentMoniker": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\PortSelectionWindow.cs",
+              "RelativeDocumentMoniker": "PortSelectionWindow.cs",
+              "ToolTip": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\PortSelectionWindow.cs",
+              "RelativeToolTip": "PortSelectionWindow.cs",
+              "ViewState": "AQIAADMAAAAAAAAAAAAQwG8AAAABAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-11T16:31:20.423Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "BlackPanel.cs",
+              "DocumentMoniker": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\BlackPanel.cs",
+              "RelativeDocumentMoniker": "BlackPanel.cs",
+              "ToolTip": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\BlackPanel.cs",
+              "RelativeToolTip": "BlackPanel.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA0AAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-10T05:37:03.019Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CoordinateGrid.cs",
+              "DocumentMoniker": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\CoordinateGrid.cs",
+              "RelativeDocumentMoniker": "CoordinateGrid.cs",
+              "ToolTip": "C:\\Users\\PDW2\\Desktop\\\u0412\u0435\u0440\u0441\u0438\u0438\\test5_2025-06-04_11-09-21\\test2\\CoordinateGrid.cs",
+              "RelativeToolTip": "CoordinateGrid.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-10T05:13:21.698Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5nfscijcot62"]
+
+[ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="1_f735u"]
+
+[node name="ScriptInterpreter" type="Node" node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_statusLabel")]
+script = ExtResource("1_f735u")
+_scriptInput = NodePath("ColorRect/CodeEdit")
+_runButton = NodePath("ColorRect/Button")
+_stopButton = NodePath("ColorRect/Button2")
+_statusLabel = NodePath("ColorRect/Label")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(640, 400)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -200.0
+offset_right = 320.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.6536, 0.473, 0.86, 1)
+
+[node name="CodeEdit" type="CodeEdit" parent="ColorRect"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 24.0
+offset_right = 343.0
+offset_bottom = 371.0
+
+[node name="Button" type="Button" parent="ColorRect"]
+layout_mode = 0
+offset_left = 369.0
+offset_top = 54.0
+offset_right = 529.0
+offset_bottom = 126.0
+text = "Запуск"
+
+[node name="Button2" type="Button" parent="ColorRect"]
+layout_mode = 0
+offset_left = 368.0
+offset_top = 129.0
+offset_right = 532.0
+offset_bottom = 188.0
+text = "Стоп"
+
+[node name="Label" type="Label" parent="ColorRect"]
+layout_mode = 0
+offset_left = 371.0
+offset_top = 195.0
+offset_right = 544.0
+offset_bottom = 321.0
+text = "Статус"
