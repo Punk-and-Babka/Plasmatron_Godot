@@ -122,7 +122,7 @@ public partial class Burner : Node2D
             _grid = GetParent().GetNode<CoordinateGrid>("CoordinateGrid");
 
         // Подписываемся на обновления сетки
-        _grid.GridUpdated += () => QueueRedraw();
+       // _grid.GridUpdated += () => QueueRedraw();
 
         // Устанавливаем порядок отрисовки
         ZIndex = 3;

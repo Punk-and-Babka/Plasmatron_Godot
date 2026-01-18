@@ -239,8 +239,11 @@ focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Пауза"
 
-[node name="CoordinateGrid" type="Node2D" parent="."]
+[node name="CoordinateGrid" type="Node2D" parent="." node_paths=PackedStringArray("_targetBackground")]
 script = ExtResource("7_fpfj3")
+_targetBackground = NodePath("../BlackPanel")
+_font = ExtResource("5_c2ibq")
+RealWorldHeightCM = 50.0
 
 [node name="ScriptInterpreter" type="Node" parent="." node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_statusLabel", "_grid", "TargetBurner")]
 script = ExtResource("9_kjvhd")
@@ -287,16 +290,16 @@ offset_right = 1206.0
 offset_bottom = 366.0
 text = "Стоп"
 
-[node name="BlackPanel" type="ColorRect" parent="." node_paths=PackedStringArray("_grid")]
+[node name="BlackPanel" type="ColorRect" parent="."]
 custom_minimum_size = Vector2(150, 150)
 anchors_preset = -1
 anchor_left = -0.0859375
 anchor_top = 0.0138889
 anchor_right = -0.0859375
 anchor_bottom = 0.0138889
-offset_left = 374.0
+offset_left = 379.0
 offset_top = 139.0
-offset_right = 1094.0
+offset_right = 1099.0
 offset_bottom = 539.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -304,5 +307,4 @@ size_flags_horizontal = 4
 size_flags_vertical = 4
 color = Color(0.0885599, 0.0885599, 0.0885599, 1)
 script = ExtResource("10_5tuhn")
-_grid = NodePath("../CoordinateGrid")
 metadata/_edit_use_anchors_ = true
