@@ -288,16 +288,16 @@ offset_bottom = 366.0
 text = "Стоп"
 
 [node name="BlackPanel" type="ColorRect" parent="." node_paths=PackedStringArray("_grid")]
-custom_minimum_size = Vector2(900, 500)
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -450.0
-offset_top = -250.0
-offset_right = 450.0
-offset_bottom = 250.0
+custom_minimum_size = Vector2(150, 150)
+anchors_preset = -1
+anchor_left = -0.0859375
+anchor_top = 0.0138889
+anchor_right = -0.0859375
+anchor_bottom = 0.0138889
+offset_left = 374.0
+offset_top = 139.0
+offset_right = 1094.0
+offset_bottom = 539.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
