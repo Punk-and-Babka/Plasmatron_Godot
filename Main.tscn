@@ -71,19 +71,18 @@ metadata/_edit_use_anchors_ = true
 layout_mode = 2
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "Скорость: 10.0 см/с"
+text = "Скорость: 100.0 мм/с"
 alignment = 1
 script = ExtResource("6_j4qnp")
-MaxSpeed = 50.0
+MaxSpeed = 500.0
 
 [node name="SpeedSlider" type="HSlider" parent="UIController/VBoxContainer"]
 custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 focus_mode = 0
 min_value = 1.0
-max_value = 50.0
-step = 0.1
-value = 10.0
+max_value = 500.0
+value = 100.0
 
 [node name="PositionLabel" type="Label" parent="UIController"]
 layout_mode = 0
@@ -92,7 +91,7 @@ offset_top = 223.0
 offset_right = 154.0
 offset_bottom = 246.0
 theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "Позиция: 0 см"
+text = "Позиция: 0 мм"
 horizontal_alignment = 1
 vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
@@ -243,7 +242,6 @@ text = "Пауза"
 script = ExtResource("7_fpfj3")
 _targetBackground = NodePath("../BlackPanel")
 _font = ExtResource("5_c2ibq")
-RealWorldHeightCM = 50.0
 
 [node name="ScriptInterpreter" type="Node" parent="." node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_statusLabel", "_grid", "TargetBurner")]
 script = ExtResource("9_kjvhd")

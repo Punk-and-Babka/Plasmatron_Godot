@@ -9,16 +9,16 @@ public partial class CoordinateGrid : Node2D
     [Export] private FontFile _font;            // Шрифт для подписей
     // endregion
 
-    // region НАСТРОЙКИ СЕТКИ
-    [ExportGroup("Реальные размеры")]
-    [Export] public float RealWorldWidthCM { get; set; } = 160f; // Реальная ширина области в см
-    [Export] public float RealWorldHeightCM { get; set; } = 90f; // Реальная высота области в см
+    // region НАСТРОЙКИ СЕТКИ (В МИЛЛИМЕТРАХ)
+    [ExportGroup("Реальные размеры (мм)")]
+    [Export] public float RealWorldWidthMM { get; set; } = 1600f; // 1600 мм (было 160 см)
+    [Export] public float RealWorldHeightMM { get; set; } = 900f; // 900 мм (было 90 см)
 
     [ExportGroup("Стиль линий")]
-    [Export] public Color MajorLineColor { get; set; } = new Color(0.1f, 0.2f, 0.5f, 0.9f);  // Цвет основных линий
-    [Export] public Color MinorLineColor { get; set; } = new Color(0.2f, 0.2f, 0.3f, 0.6f);   // Цвет вспомогательных линий
-    [Export] public int MajorLineWidth { get; set; } = 2;  // Толщина основных линий
-    [Export] public int MinorLineWidth { get; set; } = 1;  // Толщина вспомогательных линий
+    [Export] public Color MajorLineColor { get; set; } = new Color(0.1f, 0.2f, 0.5f, 0.9f);
+    [Export] public Color MinorLineColor { get; set; } = new Color(0.2f, 0.2f, 0.3f, 0.6f);
+    [Export] public int MajorLineWidth { get; set; } = 2;
+    [Export] public int MinorLineWidth { get; set; } = 1;
     // endregion
 
     private float[] _points = new float[3];
@@ -30,17 +30,17 @@ public partial class CoordinateGrid : Node2D
     /// </summary>
     public Rect2 GridArea => _targetBackground != null
         ? _targetBackground.GetRect()
-        : new Rect2(0, 0, 100, 100); // Заглушка, чтобы не делить на 0
+        : new Rect2(0, 0, 100, 100);
 
     /// <summary>
-    /// Пикселей на сантиметр по горизонтали
+    /// Пикселей на миллиметр по горизонтали
     /// </summary>
-    public float PixelsPerCM_X => GridArea.Size.X / Math.Max(1, RealWorldWidthCM);
+    public float PixelsPerMM_X => GridArea.Size.X / Math.Max(1, RealWorldWidthMM);
 
     /// <summary>
-    /// Пикселей на сантиметр по вертикали
+    /// Пикселей на миллиметр по вертикали
     /// </summary>
-    public float PixelsPerCM_Y => GridArea.Size.Y / Math.Max(1, RealWorldHeightCM);
+    public float PixelsPerMM_Y => GridArea.Size.Y / Math.Max(1, RealWorldHeightMM);
 
 
     // region ИНИЦИАЛИЗАЦИЯ
@@ -48,14 +48,13 @@ public partial class CoordinateGrid : Node2D
     {
         ZIndex = 2; // Рисуем поверх фона
 
-        // 1. Попытка найти зависимости, если не заданы в инспекторе
+        // 1. Попытка найти зависимости
         if (_targetBackground == null)
         {
             var node = GetNodeOrNull<Control>("../BlackPanel");
             if (node != null)
             {
                 _targetBackground = node;
-                GD.Print("CoordinateGrid: BlackPanel найден автоматически.");
             }
             else
             {
@@ -65,32 +64,18 @@ public partial class CoordinateGrid : Node2D
 
         if (_font == null)
         {
-            try
-            {
-                _font = GD.Load<FontFile>("res://fonts/times.ttf");
-            }
-            catch
-            {
-                GD.PrintErr("CoordinateGrid: Шрифт не найден. Текст не будет отображаться.");
-            }
+            try { _font = GD.Load<FontFile>("res://fonts/times.ttf"); } catch { }
         }
 
-        // 2. Подписка на изменение размеров
+        // 2. Подписка на изменение размеров панели
         if (_targetBackground != null)
         {
-            // Подписываемся именно на ресайз панели - это надежнее всего
-            _targetBackground.Resized += OnContainerResized;
+            _targetBackground.Resized += QueueRedraw;
         }
         else
         {
-            // Фоллбэк на ресайз окна
-            GetViewport().SizeChanged += OnContainerResized;
+            GetViewport().SizeChanged += QueueRedraw;
         }
-    }
-
-    private void OnContainerResized()
-    {
-        QueueRedraw();
     }
     // endregion
 
@@ -98,7 +83,6 @@ public partial class CoordinateGrid : Node2D
     // region ПУБЛИЧНЫЕ МЕТОДЫ
     public void UpdatePoints(float[] positions, Color[] colors)
     {
-        // Безопасное копирование данных
         int len = Math.Min(positions.Length, 3);
         Array.Copy(positions, _points, len);
 
@@ -120,7 +104,6 @@ public partial class CoordinateGrid : Node2D
     // region ОТРИСОВКА
     public override void _Draw()
     {
-        // Если зависимости не настроены, рисовать нельзя
         if (_font == null || _targetBackground == null) return;
         if (GridArea.Size.X <= 1 || GridArea.Size.Y <= 1) return;
 
@@ -131,29 +114,28 @@ public partial class CoordinateGrid : Node2D
 
     private void DrawVerticalLines()
     {
-        // Шаг 5 см (основные линии через 10 см)
-        for (float cm = 0; cm <= RealWorldWidthCM; cm += 5)
+        // Шаг 50 мм (5 см) - вспомогательные линии
+        // Шаг 100 мм (10 см) - основные линии
+        for (float mm = 0; mm <= RealWorldWidthMM; mm += 50)
         {
-            bool isMajorLine = Mathf.IsEqualApprox(cm % 10, 0);
-            float x = GridArea.Position.X + cm * PixelsPerCM_X;
+            // Основная линия каждые 100 мм
+            bool isMajorLine = Mathf.IsEqualApprox(mm % 100, 0);
 
-            // Рисуем линию
+            float x = GridArea.Position.X + mm * PixelsPerMM_X;
+
             DrawLine(
                 new Vector2(x, GridArea.Position.Y),
-                new Vector2(x, GridArea.End.Y), // Используем GridArea.End.Y
+                new Vector2(x, GridArea.End.Y),
                 isMajorLine ? MajorLineColor : MinorLineColor,
                 isMajorLine ? MajorLineWidth : MinorLineWidth
             );
 
-            // Подписи для основных линий (кроме нулевой)
-            if (isMajorLine && cm > 0)
+            // Подписи только для основных линий (кроме 0)
+            if (isMajorLine && mm > 0)
             {
-                string label = $"{cm} см";
-                // Позиционируем текст внизу области
-                Vector2 textPos = new Vector2(
-                    x + 2,
-                    GridArea.End.Y - 5
-                );
+                // F0 - формат без знаков после запятой (100, 200, 300)
+                string label = $"{mm:F0}";
+                Vector2 textPos = new Vector2(x + 2, GridArea.End.Y - 5);
                 DrawString(_font, textPos, label, fontSize: 14, modulate: Colors.White);
             }
         }
@@ -161,32 +143,27 @@ public partial class CoordinateGrid : Node2D
 
     private void DrawHorizontalLines()
     {
-        // Шаг 5 см (основные линии через 10 см)
-        for (float cm = 0; cm <= RealWorldHeightCM; cm += 5)
+        // Шаг 50 мм (5 см)
+        for (float mm = 0; mm <= RealWorldHeightMM; mm += 50)
         {
-            bool isMajorLine = Mathf.IsEqualApprox(cm % 10, 0);
+            // Основная линия каждые 100 мм
+            bool isMajorLine = Mathf.IsEqualApprox(mm % 100, 0);
 
-            // Инверсия для отсчета снизу (0 внизу)
-            float invertedCM = RealWorldHeightCM - cm;
+            // Инверсия Y (0 внизу)
+            float invertedMM = RealWorldHeightMM - mm;
+            float y = GridArea.Position.Y + mm * PixelsPerMM_Y;
 
-            float y = GridArea.Position.Y + cm * PixelsPerCM_Y;
-
-            // Рисуем линию
             DrawLine(
                 new Vector2(GridArea.Position.X, y),
-                new Vector2(GridArea.End.X, y), // Используем GridArea.End.X
+                new Vector2(GridArea.End.X, y),
                 isMajorLine ? MajorLineColor : MinorLineColor,
                 isMajorLine ? MajorLineWidth : MinorLineWidth
             );
 
-            // Подписи для основных линий
             if (isMajorLine)
             {
-                string label = $"{invertedCM} см";
-                Vector2 textPos = new Vector2(
-                    GridArea.Position.X + 5,
-                    y - 2
-                );
+                string label = $"{invertedMM:F0}";
+                Vector2 textPos = new Vector2(GridArea.Position.X + 5, y - 2);
                 DrawString(_font, textPos, label, fontSize: 14, modulate: Colors.White);
             }
         }
@@ -198,14 +175,13 @@ public partial class CoordinateGrid : Node2D
 
         for (int i = 0; i < 3; i++)
         {
-            // Если точка <= 0, считаем её неактивной (или началом координат)
-            // Если нужно рисовать точку 0, убери это условие
             if (_points[i] <= 0) continue;
 
-            float x = GridArea.Position.X + _points[i] * PixelsPerCM_X;
+            // _points[i] теперь считается в ММ
+            float x = GridArea.Position.X + _points[i] * PixelsPerMM_X;
             Color color = _pointColors[i];
 
-            // Вертикальная линия маркера
+            // Линия
             DrawLine(
                 new Vector2(x, GridArea.Position.Y),
                 new Vector2(x, GridArea.End.Y),
@@ -213,7 +189,7 @@ public partial class CoordinateGrid : Node2D
                 3
             );
 
-            // Название точки
+            // Метка "Точка N"
             DrawString(
                 _font,
                 new Vector2(x + 5, GridArea.Position.Y + 20),
@@ -222,11 +198,11 @@ public partial class CoordinateGrid : Node2D
                 modulate: color
             );
 
-            // Позиция
+            // Метка "XXX мм"
             DrawString(
                 _font,
                 new Vector2(x + 5, GridArea.Position.Y + 40),
-                $"{_points[i]:N1} см",
+                $"{_points[i]:F1} мм", // F1 оставит 1 знак (например 100.5 мм), если нужно точно
                 fontSize: 14,
                 modulate: color
             );

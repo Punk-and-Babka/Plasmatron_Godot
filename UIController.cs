@@ -31,7 +31,7 @@ public partial class UIController : Control
     [Export] private Label _statusLabel;
     [Export] private Button _emergencyStopButton;
     [Export] private SpeedInputHandler _speedInput;
-    [Export] private float DefaultSpeed = 10f;
+    [Export] private float DefaultSpeed = 100f;
     [Export] private SpinBox _pauseInput;
     [Export] private Button _pauseButton;
 
@@ -74,7 +74,7 @@ public partial class UIController : Control
     {
         // Устанавливаем начальные значения
         _lastSentSliderSpeed = DefaultSpeed;
-        _burner.MaxSpeedCM = DefaultSpeed;
+        _burner.MaxSpeedMM = DefaultSpeed;
 
         // Обновляем UI
         UpdateSpeedSlider(DefaultSpeed);
@@ -230,7 +230,7 @@ public partial class UIController : Control
             _lastSentSliderSpeed = newSpeed;
             UpdateSpeedSlider(newSpeed);
             SendSpeedCommand(newSpeed);
-            _burner.MaxSpeedCM = newSpeed;
+            _burner.MaxSpeedMM = newSpeed;
             HighlightSpeedLabel();
             GD.Print($"Новая скорость: {newSpeed:F1}");
         }
@@ -243,20 +243,22 @@ public partial class UIController : Control
     {
         try
         {
-            if (data.StartsWith("v") && int.TryParse(data[1..], out int rpm))
+            // ПРИЕМ ДАННЫХ (Обратная конвертация)
+            if (data.StartsWith("v") && int.TryParse(data[1..], out int val))
             {
-                float speed = rpm / 8f;
-                _lastSpeed = speed;
-                GD.Print($"Получена скорость: {speed:N1} см/с");
+                // Формула: val / 0.8 = скорость_мм
+                // Пример: v80 -> 80 / 0.8 = 100 мм/с
+                float speedMM = val / 0.8f;
+
+                _lastSpeed = speedMM;
+                GD.Print($"Получена скорость: {speedMM:N0} мм/с (raw: {val})");
+                UpdateUIDisplay();
             }
-            else if (float.TryParse(data, out float position))
+            else if (float.TryParse(data, NumberStyles.Any, CultureInfo.InvariantCulture, out float position))
             {
-                //_lastPosition = position;
-                //UpdateUIDisplay();
-            }
-            else
-            {
-                GD.PrintErr($"Некорректные данные: {data}");
+                // Если ардуино шлет позицию, убедись, что она тоже в мм
+                // _lastPosition = position;
+                // UpdateUIDisplay();
             }
         }
         catch (Exception ex)
@@ -284,7 +286,7 @@ public partial class UIController : Control
 
         if (targetLabel != null)
         {
-            targetLabel.Text = $"{_savedPoints[index]:N1} см";
+            targetLabel.Text = $"{_savedPoints[index]:N1} мм";
             targetLabel.AddThemeColorOverride("font_color", _pointColors[index]);
         }
     }
@@ -357,8 +359,8 @@ public partial class UIController : Control
     /// </summary>
     private void UpdateUIDisplay()
     {
-        string newText = $"Позиция: {_lastPosition:N1} см\n"
-                       + $"Скорость: {_lastSpeed:N1} см/сек\n";
+        string newText = $"Позиция: {_lastPosition:N1} мм\n"
+                       + $"Скорость: {_lastSpeed:N1} мм/сек\n";
 
         if (newText != _lastText)
         {
@@ -374,37 +376,35 @@ public partial class UIController : Control
         UpdatePointLabel(index);
 
         _grid?.UpdatePoints(_savedPoints, _pointColors);
-        GD.Print($"Точка {index} сохранена: {_lastPosition:N1} см");
+        GD.Print($"Точка {index} сохранена: {_lastPosition:N1} мм");
     }
     #endregion
 
     #region Управление скоростью
     /// <summary>
-    /// Конвертация см/сек в значение для команды
-    /// Формула: (см/сек * 10 мм/см) / 1.25 мм/оборот = см/сек * 8
+    /// Конвертация мм/сек в значение для команды
+    /// Формула: мм/сек * 0.8
     /// </summary>
-    /// <param name="cmPerSecond">Скорость в см/сек</param>
-    /// <returns>Целочисленное значение для команды</returns>
-    private int ConvertSpeedToCommandValue(float cmPerSecond)
+    private int ConvertSpeedToCommandValue(float mmPerSecond)
     {
-        cmPerSecond = Mathf.Clamp(cmPerSecond, 0f, 50f); // Ограничение до 50 см/с
-        return (int)(cmPerSecond * 8);
+        mmPerSecond = Mathf.Clamp(mmPerSecond, 0f, 500f); // Ограничение до 500 мм/с (50 см/с)
+
+        // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Коэффициент 0.8
+        // 100 * 0.8 = 80
+        // 300 * 0.8 = 240
+        return (int)(mmPerSecond * 0.8f);
     }
 
-    /// <summary>
-    /// Отправка команды скорости (только при изменении слайдера)
-    /// </summary>
-    public void SendSpeedCommand(float speedCM, bool forceSend = false)
+    public void SendSpeedCommand(float speedMM, bool forceSend = false)
     {
         if (_portWindow?.UseMockPort == true) return;
 
-        // Отправляем если принудительно или значение изменилось
-        if (forceSend || !Mathf.IsEqualApprox(_lastSentSpeed, speedCM))
+        if (forceSend || !Mathf.IsEqualApprox(_lastSentSpeed, speedMM))
         {
-            int commandValue = ConvertSpeedToCommandValue(speedCM);
+            int commandValue = ConvertSpeedToCommandValue(speedMM);
             SendCommand($"v{commandValue}");
-            _lastSentSpeed = speedCM;
-            GD.Print($"[{DateTime.Now:T}] Инициализация скорости: {speedCM:N1} см/сек → v{commandValue}");
+            _lastSentSpeed = speedMM;
+            GD.Print($"[{DateTime.Now:T}] Скорость: {speedMM:F0} мм/с -> v{commandValue}");
         }
     }
 
@@ -422,7 +422,7 @@ public partial class UIController : Control
         _speedSlider.Value = newSpeed;
 
         // Обновляем горелку
-        _burner.MaxSpeedCM = newSpeed;
+        _burner.MaxSpeedMM = newSpeed;
         SendSpeedCommand(newSpeed);
 
         // Синхронизируем интерфейс
@@ -435,7 +435,7 @@ public partial class UIController : Control
 
         // Обновляем слайдер и метку
         _speedSlider.Value = speed;
-        _speedLabel.Text = $"Скорость: {speed:N1} см/с";
+        _speedLabel.Text = $"Скорость: {speed:N1} мм/с";
     }
 
     private async void HighlightSpeedLabel()

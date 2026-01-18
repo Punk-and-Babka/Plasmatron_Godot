@@ -13,7 +13,7 @@ public partial class SpeedInputHandler : LineEdit
 
     private readonly Regex _numberRegex = new Regex(@"^(\d+([\.,]\d*)?|[\.,]\d+)$");
     private const string Prefix = "Скорость: ";
-    private const string Suffix = " см/с";
+    private const string Suffix = " мм/с";
     private float _speed = 0f;
     private bool _isEditing = false;
 
