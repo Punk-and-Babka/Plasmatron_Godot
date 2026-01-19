@@ -1,9 +1,8 @@
-[gd_scene load_steps=11 format=3 uid="uid://cwwl6wahc6xgq"]
+[gd_scene load_steps=10 format=3 uid="uid://cwwl6wahc6xgq"]
 
 [ext_resource type="Script" uid="uid://bl5bb782ddrgv" path="res://UIController.cs" id="1_wkp8b"]
 [ext_resource type="PackedScene" uid="uid://f8ijx82pgt4v" path="res://ui/about_window.tscn" id="2_20pc6"]
 [ext_resource type="PackedScene" uid="uid://blx66uippcuma" path="res://PortSelectionWindow.tscn" id="3_5vvyt"]
-[ext_resource type="PackedScene" uid="uid://hy6i0u1fd8qi" path="res://detail_window.tscn" id="4_c6i3y"]
 [ext_resource type="FontFile" uid="uid://dcriwe0rbrl4e" path="res://fonts/times.ttf" id="5_c2ibq"]
 [ext_resource type="Script" uid="uid://cxumsvhahytmn" path="res://SpeedInputHandler.cs" id="6_j4qnp"]
 [ext_resource type="Script" uid="uid://cr7t1fvsdfttu" path="res://CoordinateGrid.cs" id="7_fpfj3"]
@@ -23,7 +22,7 @@ grow_vertical = 2
 color = Color(0.493545, 0.493546, 0.493546, 1)
 metadata/_edit_use_anchors_ = true
 
-[node name="UIController" type="Control" parent="." node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_positionLabel", "_speedLabel", "_mainMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_speedInput", "_pauseInput", "_pauseButton", "_savePoint0Button", "_savePoint1Button", "_savePoint2Button", "_point0Label", "_point1Label", "_point2Label", "fileMenu", "settingsMenu", "helpMenu")]
+[node name="UIController" type="Control" parent="." node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_positionLabel", "_speedLabel", "_mainMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_speedInput", "_pauseInput", "_pauseButton", "_savePoint0Button", "_savePoint1Button", "_savePoint2Button", "_point0Label", "_point1Label", "_point2Label", "settingsMenu", "helpMenu")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -53,10 +52,8 @@ _savePoint2Button = NodePath("HBoxContainer/VBoxContainer2/Point2Button")
 _point0Label = NodePath("HBoxContainer/VBoxContainer/Point0")
 _point1Label = NodePath("HBoxContainer/VBoxContainer/Point1")
 _point2Label = NodePath("HBoxContainer/VBoxContainer/Point2")
-fileMenu = NodePath("MainMenuBar/AboutMenu")
 settingsMenu = NodePath("MainMenuBar/SettingsMenu")
 helpMenu = NodePath("MainMenuBar/Help")
-_detailWindowScene = ExtResource("4_c6i3y")
 metadata/_edit_use_anchors_ = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UIController"]
