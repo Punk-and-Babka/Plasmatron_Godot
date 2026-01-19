@@ -22,7 +22,7 @@ grow_vertical = 2
 color = Color(0.493545, 0.493546, 0.493546, 1)
 metadata/_edit_use_anchors_ = true
 
-[node name="UIController" type="Control" parent="." node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_positionLabel", "_speedLabel", "_mainMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_speedInput", "_pauseInput", "_pauseButton", "_savePoint0Button", "_savePoint1Button", "_savePoint2Button", "_point0Label", "_point1Label", "_point2Label", "settingsMenu", "helpMenu")]
+[node name="UIController" type="Control" parent="." node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_savePoint0Button", "_savePoint1Button", "_savePoint2Button", "_point0Label", "_point1Label", "_point2Label")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -34,16 +34,18 @@ _moveButton = NodePath("LineEdit/Button")
 _stopButton = NodePath("LineEdit/Button2")
 _burner = NodePath("../Burner")
 _speedSlider = NodePath("VBoxContainer/SpeedSlider")
-_positionLabel = NodePath("HBoxContainer2/VBoxContainer2/PositionValueLabel")
-_speedLabel = NodePath("VBoxContainer/SpeedInputHandler")
+_speedInput = NodePath("VBoxContainer/SpeedInputHandler")
+_lblPositionValue = NodePath("HBoxContainer2/VBoxContainer2/PositionValueLabel")
+_lblSpeedValue = NodePath("HBoxContainer2/VBoxContainer2/SpeedValueLabel")
 _mainMenu = NodePath("MainMenuBar")
+settingsMenu = NodePath("MainMenuBar/SettingsMenu")
+helpMenu = NodePath("MainMenuBar/Help")
 _aboutWindowScene = ExtResource("2_20pc6")
 _portWindowScene = ExtResource("3_5vvyt")
 _startSequenceButton = NodePath("HBoxContainer/VBoxContainer3/StartSequenceButton")
 _cyclesInput = NodePath("HBoxContainer/VBoxContainer3/CyclesSpinBox")
 _statusLabel = NodePath("HBoxContainer/VBoxContainer3/StatusLabel")
 _emergencyStopButton = NodePath("HBoxContainer/EmergencyStopButton")
-_speedInput = NodePath("VBoxContainer/SpeedInputHandler")
 _pauseInput = NodePath("HBoxContainer/VBoxContainer4/PauseInput")
 _pauseButton = NodePath("HBoxContainer/VBoxContainer4/PauseButton")
 _savePoint0Button = NodePath("HBoxContainer/VBoxContainer2/Point0Button")
@@ -52,8 +54,6 @@ _savePoint2Button = NodePath("HBoxContainer/VBoxContainer2/Point2Button")
 _point0Label = NodePath("HBoxContainer/VBoxContainer/Point0")
 _point1Label = NodePath("HBoxContainer/VBoxContainer/Point1")
 _point2Label = NodePath("HBoxContainer/VBoxContainer/Point2")
-settingsMenu = NodePath("MainMenuBar/SettingsMenu")
-helpMenu = NodePath("MainMenuBar/Help")
 metadata/_edit_use_anchors_ = true
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="UIController"]
@@ -280,11 +280,9 @@ _statusLabel = NodePath("../Burner/Label")
 _grid = NodePath("../CoordinateGrid")
 TargetBurner = NodePath("../Burner")
 
-[node name="Burner" type="Node2D" parent="." node_paths=PackedStringArray("_speedSlider", "_positionLabel", "_grid")]
+[node name="Burner" type="Node2D" parent="." node_paths=PackedStringArray("_grid")]
 z_index = 3
 script = ExtResource("8_sc1dx")
-_speedSlider = NodePath("../UIController/VBoxContainer/SpeedSlider")
-_positionLabel = NodePath("../UIController/HBoxContainer2/VBoxContainer2/PositionValueLabel")
 AccelerationTime = 0.3
 DecelerationTime = 0.3
 _grid = NodePath("../CoordinateGrid")

@@ -76,7 +76,7 @@ public partial class CoordinateGrid : Node2D
 
             if (isMajorLine && mm > 0)
             {
-                string label = $"{mm:F0} мм";
+                string label = $"{mm:F0}";
                 DrawString(_font, new Vector2(x + 2, GridArea.End.Y - 5), label, fontSize: 14, modulate: Colors.White);
             }
         }
@@ -95,7 +95,7 @@ public partial class CoordinateGrid : Node2D
 
             if (isMajorLine)
             {
-                string label = $"{invertedMM:F0} мм";
+                string label = $"{invertedMM:F0}";
                 DrawString(_font, new Vector2(GridArea.Position.X + 5, y - 2), label, fontSize: 14, modulate: Colors.White);
             }
         }
