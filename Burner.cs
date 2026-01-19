@@ -3,31 +3,35 @@ using System;
 
 public partial class Burner : Node2D
 {
-    // УБРАЛИ ссылки на Label и Slider. Burner теперь чистый исполнитель.
+    // region СОБЫТИЯ И СВОЙСТВА
     public bool IsManualPaused => _isManualPaused;
+
+    [ExportGroup("UI Settings")]
+    [Export] private HSlider _speedSlider;
+    [Export] private Label _speedLabel;
+    [Export] private Label _positionLabel;
 
     [Signal] public delegate void SequenceFinishedEventHandler();
 
-    // UIController подписывается на это, но позицию читает сам в _Process
     public event Action<float> PauseUpdated;
     public event Action<Vector2> PositionChanged;
     public event Action<float> SpeedChanged;
 
     private UIController _uiController;
 
-    // ФИЗИКА
+    // --- ФИЗИКА (Vector2) ---
     public Vector2 TargetPosition { get; private set; }
     public bool IsMovingToTarget { get; private set; }
-
-    // Свойство для чтения скорости из UIController
     public float CurrentSpeedScalar => _currentVelocity.Length();
 
     private float _stopRadius = 1.0f;
+
+    // Границы
     private Vector2 MaxPositionMM => _grid != null
         ? new Vector2(_grid.RealWorldWidthMM - RealWidthMM, _grid.RealWorldHeightMM - RealHeightMM)
         : new Vector2(100, 100);
 
-    // Внутренние переменные
+    // Автоматизация
     private bool _isAutoSequenceActive;
     private int _currentTargetIndex;
     private int _cyclesRemaining;
@@ -39,6 +43,7 @@ public partial class Burner : Node2D
     public bool IsAutoSequenceActive => _isAutoSequenceActive;
     public int CyclesRemaining => _cyclesRemaining;
 
+    // region ПАРАМЕТРЫ
     [ExportGroup("Размеры (мм)")]
     [Export] public float RealWidthMM { get; set; } = 100f;
     [Export] public float RealHeightMM { get; set; } = 72f;
@@ -53,6 +58,7 @@ public partial class Burner : Node2D
 
     [ExportGroup("Связи")]
     [Export] private CoordinateGrid _grid;
+    // endregion
 
     [Export] public float PauseDuration { get; set; } = 3.0f;
     private float _pauseTimer;
@@ -60,8 +66,10 @@ public partial class Burner : Node2D
 
     private float _accelerationRate;
     private float _decelerationRate;
-    private Vector2 _currentVelocity; // Вектор скорости
     private Vector2 _positionMM;
+
+    // Вектор текущей скорости (X, Y)
+    private Vector2 _currentVelocity;
 
     public Vector2 PositionMM
     {
@@ -86,16 +94,12 @@ public partial class Burner : Node2D
         AddToGroup("burners");
         if (_grid == null) _grid = GetParent().GetNodeOrNull<CoordinateGrid>("CoordinateGrid");
         _uiController = GetNodeOrNull<UIController>("../UIController");
-        CalculatePhysicsRates();
-    }
 
-    public void SetMovementSpeed(float speed)
-    {
-        if (Mathf.IsEqualApprox(MaxSpeedMM, speed)) return;
-        MaxSpeedMM = speed;
         CalculatePhysicsRates();
-        SpeedChanged?.Invoke(MaxSpeedMM);
-        // Не вызываем методы UIController отсюда, чтобы избежать цикличности
+
+        if (_positionLabel == null) _positionLabel = GetNodeOrNull<Label>("../CanvasLayer/PositionLabel");
+        if (_speedSlider == null) _speedSlider = GetNodeOrNull<HSlider>("../CanvasLayer/UIController/VBoxContainer/SpeedSlider");
+        if (_speedSlider != null) ConnectSlider();
     }
 
     private void CalculatePhysicsRates()
@@ -117,10 +121,9 @@ public partial class Burner : Node2D
         }
 
         HandlePhysics(dt);
-        // Убрали UpdateUI() - этим занимается UIController
     }
 
-    // --- ФИЗИКА (Та самая, которая работает правильно) ---
+    // --- ФИЗИКА И ВВОД ---
     private void HandlePhysics(float delta)
     {
         if (_isManualPaused) return;
@@ -128,6 +131,7 @@ public partial class Burner : Node2D
         Vector2 targetVelocity = Vector2.Zero;
         float currentRate = _decelerationRate;
 
+        // 1. АВТОМАТИЧЕСКОЕ ДВИЖЕНИЕ
         if (IsMovingToTarget)
         {
             Vector2 diff = TargetPosition - PositionMM;
@@ -147,25 +151,47 @@ public partial class Burner : Node2D
             targetVelocity = diff.Normalized() * targetSpeed;
             currentRate = targetSpeed < MaxSpeedMM ? _decelerationRate : _accelerationRate;
         }
+        // 2. РУЧНОЕ УПРАВЛЕНИЕ
         else if (!IsAutoSequenceActive)
         {
+            // Получаем ввод по X и Y
             float inputX = Input.GetAxis("Burner_left", "Burner_right");
-            Vector2 inputDir = new Vector2(inputX, 0).Normalized();
+
+            // В Godot Y вниз положителен для 2D, но в нашем глоб. смысле "Вверх" = +Y (высота)
+            // Input.GetAxis("down", "up") вернет 1 если up, -1 если down.
+            float inputY = Input.GetAxis("Burner_down", "Burner_up");
+
+            Vector2 inputDir = new Vector2(inputX, inputY).Normalized();
 
             if (inputDir != Vector2.Zero)
             {
                 targetVelocity = inputDir * MaxSpeedMM;
                 currentRate = _accelerationRate;
+
+                // Отправляем команду при ручном вводе
+                // (Отправляем только если реально разгоняемся, чтобы не спамить)
+                if (_currentVelocity.Length() > 1.0f)
+                {
+                    SendMovementCommand(PositionMM + inputDir * 100f); // "Виртуальная цель" впереди
+                }
             }
             else
             {
                 targetVelocity = Vector2.Zero;
                 currentRate = _decelerationRate;
+                // Если остановились и не в паузе - шлем стоп (один раз обработается в StopAutoMovement или по таймеру)
             }
         }
 
+        // Применяем инерцию
         _currentVelocity = _currentVelocity.MoveToward(targetVelocity, currentRate * delta);
         PositionMM += _currentVelocity * delta;
+
+        // Ручная отправка STOP если скорость упала до 0 после движения
+        if (!IsMovingToTarget && !IsAutoSequenceActive && _currentVelocity == Vector2.Zero && targetVelocity == Vector2.Zero)
+        {
+            // Здесь можно добавить логику отправки 's' один раз, если нужно
+        }
     }
 
     // --- УПРАВЛЕНИЕ ---
@@ -178,7 +204,7 @@ public partial class Burner : Node2D
         if (!_isManualPaused)
         {
             IsMovingToTarget = true;
-            _uiController?.SendCommand(TargetPosition.X > PositionMM.X ? "f" : "b");
+            SendMovementCommand(TargetPosition);
         }
     }
 
@@ -187,12 +213,38 @@ public partial class Burner : Node2D
         if (IsMovingToTarget)
         {
             IsMovingToTarget = false;
-            _uiController?.SendCommand("s");
+            SendStopCommand();
             if (_isAutoSequenceActive) HandleMovementCompletion();
         }
     }
 
-    // --- АВТОМАТИЗАЦИЯ ---
+    // --- COM PORT ---
+    private void SendMovementCommand(Vector2 target)
+    {
+        if (_uiController == null) return;
+
+        // Вычисляем разницу
+        Vector2 diff = target - PositionMM;
+
+        // Определяем доминирующую ось
+        string cmd = "";
+
+        // Если движение по X больше, чем по Y
+        if (Mathf.Abs(diff.X) > Mathf.Abs(diff.Y))
+        {
+            cmd = diff.X > 0 ? "f" : "b";
+        }
+        else
+        {
+            cmd = diff.Y > 0 ? "u" : "d"; // u - Up (Вверх), d - Down (Вниз)
+        }
+
+        _uiController.SendCommand(cmd);
+    }
+
+    private void SendStopCommand() => _uiController?.SendCommand("s");
+
+    // --- АВТОМАТИЗАЦИЯ И ПРОЧЕЕ (Без изменений логики) ---
     public void StartAutoSequence(Vector2[] points, int cycles)
     {
         ResetSequenceState();
@@ -292,6 +344,21 @@ public partial class Burner : Node2D
         _isManualPaused = state;
         if (state) _uiController?.SendCommand("s");
         else if (IsMovingToTarget) MoveToPosition(TargetPosition);
+    }
+
+    public void SetMovementSpeed(float speed)
+    {
+        if (Mathf.IsEqualApprox(MaxSpeedMM, speed)) return;
+        MaxSpeedMM = speed;
+        CalculatePhysicsRates();
+        SpeedChanged?.Invoke(MaxSpeedMM);
+        _uiController?.SendSpeedCommand(MaxSpeedMM);
+        _uiController?.UpdateSpeedSlider(MaxSpeedMM);
+    }
+
+    private void ConnectSlider()
+    {
+        _speedSlider.ValueChanged += v => SetMovementSpeed((float)v);
     }
 
     public void EmergencyStop()

@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Globalization;
 using System.IO.Ports;
-using System.Text.RegularExpressions; // Добавлено для очистки текста
+using System.Text.RegularExpressions;
 
 public partial class UIController : Control
 {
@@ -91,7 +91,7 @@ public partial class UIController : Control
         _lastSentSliderSpeed = DefaultSpeed;
         if (_burner != null) _burner.SetMovementSpeed(DefaultSpeed);
 
-        UpdateSpeedUI(DefaultSpeed);
+        UpdateSpeedSlider(DefaultSpeed);
         SendSpeedCommand(DefaultSpeed, true);
     }
 
@@ -107,7 +107,7 @@ public partial class UIController : Control
 
         if (_speedSlider != null) _speedSlider.ValueChanged += OnSpeedSliderChanged;
 
-        // --- ИЗМЕНЕНИЕ: Умная обработка поля ввода скорости ---
+        // Умная обработка поля ввода скорости
         if (_speedInput != null)
         {
             // 1. При нажатии Enter
@@ -123,7 +123,7 @@ public partial class UIController : Control
                 }
                 else
                 {
-                    UpdateSpeedUI(_lastSentSliderSpeed); // Возврат при ошибке
+                    UpdateSpeedSlider(_lastSentSliderSpeed); // Возврат при ошибке
                 }
             };
 
@@ -136,7 +136,7 @@ public partial class UIController : Control
             // 3. При потере фокуса - возвращаем красивый формат
             _speedInput.FocusExited += () =>
             {
-                UpdateSpeedUI(_lastSentSliderSpeed);
+                UpdateSpeedSlider(_lastSentSliderSpeed);
             };
         }
 
@@ -195,32 +195,32 @@ public partial class UIController : Control
 
     private void OnSpeedUpdated(float speed)
     {
-        // Обновляем текущее значение (если оно пришло из физики/скрипта)
         _lastSpeed = speed;
         UpdateUIDisplay();
 
-        // Синхронизируем слайдер, если он отстал
+        // Синхронизируем слайдер, если он отстал от реальной скорости (скрипт/физика)
         if (Math.Abs(_lastSentSliderSpeed - speed) > 1.0f)
         {
             _lastSentSliderSpeed = speed;
-            UpdateSpeedUI(speed);
+            UpdateSpeedSlider(speed);
         }
     }
 
     private void ApplySpeedChange(float newSpeed)
     {
-        UpdateSpeedUI(newSpeed);
+        UpdateSpeedSlider(newSpeed);
         if (_burner != null) _burner.SetMovementSpeed(newSpeed);
         SendSpeedCommand(newSpeed);
         HighlightSpeedLabel();
     }
 
-    private void UpdateSpeedUI(float speed)
+    // --- ИСПРАВЛЕНИЕ: Метод сделан публичным и переименован обратно в UpdateSpeedSlider ---
+    public void UpdateSpeedSlider(float speed)
     {
         if (_speedSlider != null)
             _speedSlider.SetValueNoSignal(speed);
 
-        // ИЗМЕНЕНИЕ: Форматированный текст, только если не редактируем
+        // Форматированный текст, только если не редактируем
         if (_speedInput != null && !_speedInput.HasFocus())
             _speedInput.Text = $"Скорость: {speed:F0} мм/сек";
     }
@@ -346,8 +346,35 @@ public partial class UIController : Control
 
     private void OnMoveButtonPressed()
     {
-        if (float.TryParse(_positionInput.Text, out float x)) _burner?.MoveToPosition(new Vector2(x, 0));
+        // Парсинг X или X;Y
+        string input = _positionInput.Text.Replace(" ", "");
+        float targetX = 0;
+        float targetY = 0;
+
+        string[] parts = input.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 2)
+        {
+            if (float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out targetX) &&
+                float.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out targetY))
+            {
+                _burner?.MoveToPosition(new Vector2(targetX, targetY));
+                return;
+            }
+        }
+        else if (parts.Length == 1)
+        {
+            if (float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out targetX))
+            {
+                // Берем текущий Y у горелки
+                float currentY = _burner != null ? _burner.PositionMM.Y : 0;
+                _burner?.MoveToPosition(new Vector2(targetX, currentY));
+                return;
+            }
+        }
+        ShowError("Некорректный формат позиции.\nИспользуйте 'X' или 'X;Y'");
     }
+
     private void OnStopButtonPressed() => _burner?.StopAutoMovement();
 
     private void OnEmergencyStopPressed()
@@ -378,7 +405,7 @@ public partial class UIController : Control
         _burner?.SetManualPause(_isManualPaused);
         _pauseButton.Text = _isManualPaused ? "Продолжить" : "Пауза";
     }
-    private void OnPauseUpdated(float time) => _statusLabel.Text = time > 0 ? $"Пауза: {time:N1}" : "Работа";
+    private void OnPauseUpdated(float time) => _statusLabel.Text = time > 0 ? $"Пауза: {time:N1} сек" : "Работа";
     private void UpdateStatus(string msg) => _statusLabel.Text = msg;
     private void ShowError(string msg) { var d = new AcceptDialog { DialogText = msg }; GetTree().Root.AddChild(d); d.PopupCentered(); }
 
