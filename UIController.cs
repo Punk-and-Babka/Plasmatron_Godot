@@ -107,33 +107,28 @@ public partial class UIController : Control
 
         if (_speedSlider != null) _speedSlider.ValueChanged += OnSpeedSliderChanged;
 
-        // Умная обработка поля ввода скорости
         if (_speedInput != null)
         {
-            // 1. При нажатии Enter
             _speedInput.TextSubmitted += (text) =>
             {
-                // Удаляем всё кроме цифр и точки/запятой
                 string cleanText = Regex.Replace(text, @"[^\d.,]", "").Replace(",", ".");
 
                 if (float.TryParse(cleanText, NumberStyles.Any, CultureInfo.InvariantCulture, out float val))
                 {
                     OnSpeedInputChanged(val);
-                    _speedInput.ReleaseFocus(); // Снимаем фокус, чтобы сработало форматирование
+                    _speedInput.ReleaseFocus();
                 }
                 else
                 {
-                    UpdateSpeedSlider(_lastSentSliderSpeed); // Возврат при ошибке
+                    UpdateSpeedSlider(_lastSentSliderSpeed);
                 }
             };
 
-            // 2. При получении фокуса (клик) - показываем только число
             _speedInput.FocusEntered += () =>
             {
                 _speedInput.Text = _lastSentSliderSpeed.ToString("F0");
             };
 
-            // 3. При потере фокуса - возвращаем красивый формат
             _speedInput.FocusExited += () =>
             {
                 UpdateSpeedSlider(_lastSentSliderSpeed);
@@ -171,10 +166,14 @@ public partial class UIController : Control
         }
     }
 
+    // --- ИЗМЕНЕНИЕ: Отображение X и Y ---
     private void UpdateUIDisplay()
     {
-        if (_lblPositionValue != null) _lblPositionValue.Text = $"{_lastPosition.X:F1} мм";
-        if (_lblSpeedValue != null) _lblSpeedValue.Text = $"{_lastSpeed:F0} мм/сек";
+        if (_lblPositionValue != null)
+            _lblPositionValue.Text = $"X: {_lastPosition.X:F1}  Y: {_lastPosition.Y:F1} мм";
+
+        if (_lblSpeedValue != null)
+            _lblSpeedValue.Text = $"{_lastSpeed:F0} мм/сек";
     }
 
     // --- СИНХРОНИЗАЦИЯ СКОРОСТИ ---
@@ -198,7 +197,6 @@ public partial class UIController : Control
         _lastSpeed = speed;
         UpdateUIDisplay();
 
-        // Синхронизируем слайдер, если он отстал от реальной скорости (скрипт/физика)
         if (Math.Abs(_lastSentSliderSpeed - speed) > 1.0f)
         {
             _lastSentSliderSpeed = speed;
@@ -214,13 +212,11 @@ public partial class UIController : Control
         HighlightSpeedLabel();
     }
 
-    // --- ИСПРАВЛЕНИЕ: Метод сделан публичным и переименован обратно в UpdateSpeedSlider ---
     public void UpdateSpeedSlider(float speed)
     {
         if (_speedSlider != null)
             _speedSlider.SetValueNoSignal(speed);
 
-        // Форматированный текст, только если не редактируем
         if (_speedInput != null && !_speedInput.HasFocus())
             _speedInput.Text = $"Скорость: {speed:F0} мм/сек";
     }
@@ -346,7 +342,6 @@ public partial class UIController : Control
 
     private void OnMoveButtonPressed()
     {
-        // Парсинг X или X;Y
         string input = _positionInput.Text.Replace(" ", "");
         float targetX = 0;
         float targetY = 0;
@@ -366,7 +361,6 @@ public partial class UIController : Control
         {
             if (float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out targetX))
             {
-                // Берем текущий Y у горелки
                 float currentY = _burner != null ? _burner.PositionMM.Y : 0;
                 _burner?.MoveToPosition(new Vector2(targetX, currentY));
                 return;
@@ -383,11 +377,14 @@ public partial class UIController : Control
         SendCommand("s");
     }
 
+    // --- ИЗМЕНЕНИЕ: Отображение X и Y в сохраненных точках ---
     private void SavePoint(int i)
     {
         _savedPoints[i] = _lastPosition;
         Label l = i switch { 0 => _point0Label, 1 => _point1Label, 2 => _point2Label, _ => null };
-        if (l != null) l.Text = $"{_savedPoints[i].X:F0} мм";
+        if (l != null)
+            l.Text = $"{_savedPoints[i].X:F0}; {_savedPoints[i].Y:F0}"; // Формат "100; 50"
+
         _grid?.UpdatePoints(_savedPoints, _pointColors);
     }
 
