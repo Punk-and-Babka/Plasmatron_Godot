@@ -5,28 +5,23 @@ using System.Globalization;
 using System.IO.Ports;
 using System.Linq;
 
-/// <summary>
-/// Главный контроллер пользовательского интерфейса.
-/// Управляет меню, COM-портом, скоростью и связью с горелкой.
-/// </summary>
 public partial class UIController : Control
 {
-    #region Экспортируемые элементы UI
+    #region Экспортируемые элементы
     [ExportGroup("Ссылки")]
     [Export] private CoordinateGrid _grid;
     [Export] private LineEdit _positionInput;
     [Export] private Button _moveButton;
     [Export] private Button _stopButton;
-    [Export] private Burner _burner;            // Ссылка на компонент горелки
-    [Export] private HSlider _speedSlider;      // Слайдер для регулировки скорости
-    [Export] private Label _positionLabel;      // Метка для отображения позиции
-    [Export] private LineEdit _speedLabel;      // Метка для отображения скорости
-    [Export] private MenuBar _mainMenu;         // Главное меню приложения
+    [Export] private Burner _burner;
+    [Export] private HSlider _speedSlider;
+    [Export] private Label _positionLabel;
+    [Export] private LineEdit _speedLabel;
+    [Export] private MenuBar _mainMenu;
 
-    [ExportGroup("Окна и Сцены")]
-    [Export] private PackedScene _aboutWindowScene; // Сцена окна "О программе"
-    [Export] private PackedScene _portWindowScene;  // Сцена окна выбора порта
-    // Сюда позже добавим сцены для новых окон (Task #2, #3, #4, #5)
+    [ExportGroup("Окна")]
+    [Export] private PackedScene _aboutWindowScene;
+    [Export] private PackedScene _portWindowScene;
 
     [ExportGroup("Управление")]
     [Export] private Button _startSequenceButton;
@@ -34,7 +29,7 @@ public partial class UIController : Control
     [Export] private Label _statusLabel;
     [Export] private Button _emergencyStopButton;
     [Export] private SpeedInputHandler _speedInput;
-    [Export] private float DefaultSpeed = 100f; // 100 мм/с
+    [Export] private float DefaultSpeed = 100f;
     [Export] private SpinBox _pauseInput;
     [Export] private Button _pauseButton;
 
@@ -47,37 +42,33 @@ public partial class UIController : Control
     [Export] private Label _point2Label;
     [Export] private Color[] _pointColors = { Colors.Green, Colors.Red, Colors.Blue };
 
-    // Новые ссылки на меню
     [ExportGroup("Меню")]
     [Export] private PopupMenu settingsMenu;
     [Export] private PopupMenu helpMenu;
     #endregion
 
-    #region Приватные поля
-    private SerialPort _serialPort;                 // Объект для работы с COM-портом
-    private PortSelectionWindow _portWindow;        // Окно выбора порта
-    private float _lastPosition;                    // Последняя зафиксированная позиция
-    private float _lastSpeed;                       // Последняя зафиксированная скорость
-    private float _updateTimer;                     // Таймер для обновления UI
-    private string _lastText = string.Empty;        // Кэш последнего отображаемого текста
-    private float _lastSentSpeed = -1;              // Последняя отправленная скорость
-    private float _lastSentSliderSpeed = -1;
-    private float[] _savedPoints = new float[3];
-    private bool _isManualPaused;
-    #endregion
+    private SerialPort _serialPort;
+    private PortSelectionWindow _portWindow;
 
-    #region Инициализация
+    // ИСПРАВЛЕНО: Единственное объявление Vector2
+    private Vector2[] _savedPoints = new Vector2[3];
+    private Vector2 _lastPosition;
+
+    private float _lastSpeed;
+    private float _updateTimer;
+    private string _lastText = string.Empty;
+    private float _lastSentSpeed = -1;
+    private float _lastSentSliderSpeed = -1;
+    private bool _isManualPaused;
+
     public override void _Ready()
     {
-        // Явная настройка культуры для всего приложения (точки вместо запятых)
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 
-        InitializeEventHandlers();  // Настройка обработчиков событий
-        InitializeMainMenu();       // Настройка меню (Task #6)
-
-        ShowPortSelectionWindow();  // Показать окно выбора порта при старте
-
+        InitializeEventHandlers();
+        InitializeMainMenu();
+        ShowPortSelectionWindow();
         CallDeferred(nameof(InitializeDefaultSpeed));
     }
 
@@ -85,27 +76,21 @@ public partial class UIController : Control
     {
         _lastSentSliderSpeed = DefaultSpeed;
         if (_burner != null) _burner.MaxSpeedMM = DefaultSpeed;
-
         UpdateSpeedSlider(DefaultSpeed);
-        SendSpeedCommand(DefaultSpeed, true); // true - принудительная отправка
+        SendSpeedCommand(DefaultSpeed, true);
     }
 
     private void InitializeEventHandlers()
     {
-        // Подписка на события горелки
         if (_burner != null)
         {
             _burner.PositionChanged += OnPositionUpdated;
             _burner.SpeedChanged += OnSpeedUpdated;
-            _burner.MovementStarted += OnBurnerMovementStarted;
-            _burner.MovementStopped += OnBurnerMovementStopped;
             _burner.PauseUpdated += OnPauseUpdated;
         }
 
-        // Подписка на UI
-        _speedSlider.ValueChanged += OnSpeedSliderChanged;
-        _speedInput.SpeedChanged += OnSpeedInputChanged;
-        _speedSlider.TickCount = 11;
+        if (_speedSlider != null) _speedSlider.ValueChanged += OnSpeedSliderChanged;
+        if (_speedInput != null) _speedInput.SpeedChanged += OnSpeedInputChanged;
 
         _moveButton.Pressed += OnMoveButtonPressed;
         _stopButton.Pressed += OnStopButtonPressed;
@@ -120,18 +105,13 @@ public partial class UIController : Control
         _pauseInput.ValueChanged += OnPauseChanged;
         _pauseButton.Pressed += OnPauseButtonPressed;
     }
-    #endregion
 
-    #region Логика Меню (Task #6 - Реализация)
     private void InitializeMainMenu()
     {
         if (_mainMenu == null) return;
-
-        // 1. Находим подменю автоматически, если они не привязаны в инспекторе
         if (settingsMenu == null) settingsMenu = _mainMenu.GetChild(0) as PopupMenu;
         if (helpMenu == null) helpMenu = _mainMenu.GetChild(1) as PopupMenu;
 
-        // 2. Настраиваем меню "Настройки"
         if (settingsMenu != null)
         {
             settingsMenu.Clear();
@@ -140,14 +120,11 @@ public partial class UIController : Control
             settingsMenu.AddItem("Настройки ускорения", 2);
             settingsMenu.AddItem("Добавить деталь", 3);
 
-            // Безопасное переподключение сигнала
             if (settingsMenu.IsConnected(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnSettingsMenuIdPressed))))
                 settingsMenu.Disconnect(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnSettingsMenuIdPressed)));
-
             settingsMenu.IdPressed += OnSettingsMenuIdPressed;
         }
 
-        // 3. Настраиваем меню "Help"
         if (helpMenu != null)
         {
             helpMenu.Clear();
@@ -157,54 +134,43 @@ public partial class UIController : Control
 
             if (helpMenu.IsConnected(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnHelpMenuIdPressed))))
                 helpMenu.Disconnect(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnHelpMenuIdPressed)));
-
             helpMenu.IdPressed += OnHelpMenuIdPressed;
         }
     }
 
-    // Обработчик нажатий меню Настройки
     private void OnSettingsMenuIdPressed(long id)
     {
         switch (id)
         {
             case 0: ShowPortSelectionWindow(); break;
-            case 1: ShowSpeedCalculationWindow(); break;
-            case 2: ShowAccelerationWindow(); break;
-            case 3: ShowWorkpieceWindow(); break;
+            case 1: GD.Print("TODO: Calc Speed"); break;
+            case 2: GD.Print("TODO: Accel Settings"); break;
+            case 3: GD.Print("TODO: Workpiece"); break;
         }
     }
 
-    // Обработчик нажатий меню Help
     private void OnHelpMenuIdPressed(long id)
     {
         switch (id)
         {
-            case 0: ShowScriptHelpWindow(); break;
+            case 0: GD.Print("TODO: Help"); break;
             case 1: ShowAboutWindow(); break;
         }
     }
-    #endregion
 
-    #region Управление Окнами (Методы открытия)
     private void ShowPortSelectionWindow()
     {
-        // Проверка: если окно уже открыто и валидно, просто показываем его
         if (_portWindow != null && GodotObject.IsInstanceValid(_portWindow))
         {
             _portWindow.PopupCentered();
             return;
         }
-
         if (_portWindowScene != null)
         {
             _portWindow = _portWindowScene.Instantiate<PortSelectionWindow>();
             AddChild(_portWindow);
             _portWindow.ConnectionConfirmed += OnPortSelected;
             _portWindow.PopupCentered();
-        }
-        else
-        {
-            GD.PrintErr("Сцена PortWindowScene не назначена!");
         }
     }
 
@@ -216,141 +182,76 @@ public partial class UIController : Control
             AddChild(win);
             win.PopupCentered();
         }
-        else GD.Print("Окно 'О программе' не назначено.");
     }
 
-    // --- Заглушки для будущих задач ---
-    private void ShowSpeedCalculationWindow() => GD.Print("TODO: Открыть окно расчета скорости (Task #2)");
-    private void ShowAccelerationWindow() => GD.Print("TODO: Открыть окно ускорения (Task #3)");
-    private void ShowWorkpieceWindow() => GD.Print("TODO: Открыть окно детали (Task #4)");
-    private void ShowScriptHelpWindow() => GD.Print("TODO: Открыть справку (Task #5)");
-    #endregion
-
-    #region Управление COM-портом
     private void OnPortSelected()
     {
-        if (_portWindow.UseMockPort)
-        {
-            GD.Print("Активирован режим эмуляции");
-            InitializeMockPort();
-            return;
-        }
-        InitializeSerialPort();
+        if (_portWindow.UseMockPort) InitializeMockPort();
+        else InitializeSerialPort();
     }
 
     private void InitializeSerialPort()
     {
         try
         {
-            // Закрываем старый, если есть
             if (_serialPort != null && _serialPort.IsOpen) _serialPort.Close();
-
-            _serialPort = new SerialPort(
-                _portWindow.SelectedPort,
-                _portWindow.SelectedBaudRate,
-                Parity.None, 8, StopBits.One)
-            {
-                ReadTimeout = 500,
-                WriteTimeout = 500
-            };
-
+            _serialPort = new SerialPort(_portWindow.SelectedPort, _portWindow.SelectedBaudRate, Parity.None, 8, StopBits.One);
             _serialPort.Open();
             _serialPort.DataReceived += SerialDataReceived;
-            GD.Print($"Успешное подключение к {_portWindow.SelectedPort}");
+            GD.Print($"Connected to {_portWindow.SelectedPort}");
         }
-        catch (Exception ex)
-        {
-            ShowError($"Ошибка подключения: {ex.Message}");
-            _serialPort?.Close();
-        }
+        catch (Exception ex) { ShowError($"Error: {ex.Message}"); }
     }
 
-    private void InitializeMockPort()
-    {
-        var timer = new Timer();
-        timer.WaitTime = 0.5f; // Эмуляция прихода данных
-        timer.Timeout += () =>
-        {
-            // Эмуляция чтения (если нужно)
-        };
-        AddChild(timer);
-        timer.Start();
-    }
-    #endregion
+    private void InitializeMockPort() { /* Mock Logic */ }
 
-    #region Обработка данных
     private void SerialDataReceived(object sender, SerialDataReceivedEventArgs e)
     {
-        try
-        {
-            var data = _serialPort.ReadLine().Trim();
-            CallDeferred(nameof(ProcessIncomingData), data);
-        }
-        catch { /* Игнорируем таймауты */ }
+        try { CallDeferred(nameof(ProcessIncomingData), _serialPort.ReadLine().Trim()); } catch { }
     }
 
     private void ProcessIncomingData(string data)
     {
-        try
+        if (data.StartsWith("v") && int.TryParse(data[1..], out int val))
         {
-            if (data.StartsWith("v") && int.TryParse(data[1..], out int val))
-            {
-                // Обратная конвертация: val / 0.8 = мм/с
-                float speedMM = val / 0.8f;
-                _lastSpeed = speedMM;
-                GD.Print($"Получена скорость: {speedMM:N0} мм/с (raw: {val})");
-                UpdateUIDisplay();
-            }
-        }
-        catch (Exception ex)
-        {
-            ShowError($"Ошибка обработки данных: {ex.Message}");
+            _lastSpeed = val / 0.8f;
+            UpdateUIDisplay();
         }
     }
-    #endregion
 
-    #region Управление скоростью
-    private int ConvertSpeedToCommandValue(float mmPerSecond)
+    public void SendCommand(string command)
     {
-        mmPerSecond = Mathf.Clamp(mmPerSecond, 0f, 500f);
-        // Коэффициент 0.8 (100 мм/с -> 80)
-        return (int)(mmPerSecond * 0.8f);
+        if (_portWindow?.UseMockPort != true && _serialPort?.IsOpen == true)
+        {
+            _serialPort.WriteLine(command);
+            GD.Print($"[SENT] {command}");
+        }
     }
 
     public void SendSpeedCommand(float speedMM, bool forceSend = false)
     {
         if (forceSend || !Mathf.IsEqualApprox(_lastSentSpeed, speedMM))
         {
-            int commandValue = ConvertSpeedToCommandValue(speedMM);
-
-            // Лог (виден даже в Mock режиме)
-            GD.Print($"[{DateTime.Now:T}] [DEBUG] {speedMM:F0} мм/с -> v{commandValue}");
-
+            int val = (int)(Mathf.Clamp(speedMM, 0, 500) * 0.8f);
+            GD.Print($"[SPEED] {speedMM:F0} -> v{val}");
+            if (_portWindow?.UseMockPort != true) SendCommand($"v{val}");
             _lastSentSpeed = speedMM;
-
-            // Отправляем в порт только если это НЕ заглушка
-            if (_portWindow?.UseMockPort != true)
-            {
-                SendCommand($"v{commandValue}");
-            }
         }
     }
 
     private void OnSpeedSliderChanged(double value)
     {
-        float newSpeed = (float)Math.Round(value, 0); // Округление до целого мм
+        float newSpeed = (float)Math.Round(value, 0);
         if (Math.Abs(_lastSentSliderSpeed - newSpeed) < 1f) return;
-
         _lastSentSliderSpeed = newSpeed;
         UpdateSpeedSlider(newSpeed);
         SendSpeedCommand(newSpeed);
         if (_burner != null) _burner.MaxSpeedMM = newSpeed;
-        HighlightSpeedLabel();
     }
 
     private void OnSpeedUpdated(float speed)
     {
-        _lastSpeed = (float)Math.Round(speed, 2);
+        _lastSpeed = speed;
         UpdateUIDisplay();
     }
 
@@ -368,33 +269,22 @@ public partial class UIController : Control
         _speedSlider.Value = speed;
         _speedLabel.Text = $"Скорость: {speed:N0} мм/с";
     }
-    #endregion
 
-    #region Основной цикл и Обновление UI
     public override void _Process(double delta)
     {
         _updateTimer += (float)delta;
-
-        // --- ИСПРАВЛЕНИЕ БАГА ЗАСТЫВАНИЯ ---
-        // Принудительно читаем позицию из горелки каждый кадр, не полагаясь только на события
-        if (_burner != null)
-        {
-            _lastPosition = _burner.PositionXMM;
-        }
-        // -----------------------------------
-
-        if (_updateTimer > 0.05f) // Обновление каждые 50 мс
+        if (_burner != null) _lastPosition = _burner.PositionMM; // Читаем Vector2
+        if (_updateTimer > 0.05f)
         {
             UpdateUIDisplay();
-            _updateTimer = 0f;
+            _updateTimer = 0;
         }
     }
 
     private void UpdateUIDisplay()
     {
-        string newText = $"Позиция: {_lastPosition:N1} мм\n"
-                       + $"Скорость: {_lastSpeed:N0} мм/сек\n";
-
+        string newText = $"Позиция: {_lastPosition.X:N1} мм\n" +
+                         $"Скорость: {_lastSpeed:N0} мм/сек\n";
         if (newText != _lastText)
         {
             _positionLabel.Text = newText;
@@ -402,93 +292,56 @@ public partial class UIController : Control
         }
     }
 
-    private void OnPositionUpdated(float position)
+    private void OnPositionUpdated(Vector2 position)
     {
         _lastPosition = position;
         if (_burner != null && _burner.IsAutoSequenceActive)
-        {
-            _burner.HandleMovementCompletion();
             UpdateStatus($"Циклов осталось: {_burner.CyclesRemaining}");
-        }
-    }
-    #endregion
-
-    #region Вспомогательные методы
-    public void SendCommand(string command)
-    {
-        if (_portWindow?.UseMockPort == true) return;
-
-        try
-        {
-            if (_serialPort?.IsOpen == true)
-            {
-                _serialPort.WriteLine(command);
-                GD.Print($"[{DateTime.Now:T}] Отправлена команда: {command}");
-            }
-        }
-        catch (Exception ex)
-        {
-            ShowError($"Ошибка отправки: {ex.Message}");
-        }
     }
 
-    private void ShowError(string message)
-    {
-        var dialog = new AcceptDialog { Title = "Ошибка", DialogText = message };
-        GetTree().Root.AddChild(dialog);
-        dialog.PopupCentered();
-        GD.PrintErr($"[{DateTime.Now:T}] {message}");
-    }
-
-    private async void HighlightSpeedLabel()
-    {
-        if (_speedLabel == null) return;
-        _speedLabel.AddThemeColorOverride("font_color", Colors.Yellow);
-        await ToSignal(GetTree().CreateTimer(0.3), "timeout");
-        _speedLabel.RemoveThemeColorOverride("font_color");
-    }
-    #endregion
-
-    #region Точки и Статус
     private void SavePoint(int index)
     {
-        _savedPoints[index] = _lastPosition;
-        UpdatePointLabel(index);
+        _savedPoints[index] = _lastPosition; // Сохраняем Vector2
+        Label l = index switch { 0 => _point0Label, 1 => _point1Label, 2 => _point2Label, _ => null };
+        if (l != null)
+        {
+            l.Text = $"{_savedPoints[index].X:F0} мм";
+            l.AddThemeColorOverride("font_color", _pointColors[index]);
+        }
         _grid?.UpdatePoints(_savedPoints, _pointColors);
-        GD.Print($"Точка {index} сохранена: {_lastPosition:N1} мм");
+        GD.Print($"Точка {index}: {_savedPoints[index]}");
     }
 
-    private void UpdatePointLabel(int index)
+    private void OnMoveButtonPressed()
     {
-        Label targetLabel = index switch { 0 => _point0Label, 1 => _point1Label, 2 => _point2Label, _ => null };
-        if (targetLabel != null)
+        if (float.TryParse(_positionInput.Text, out float targetX))
+            _burner?.MoveToPosition(new Vector2(targetX, 0)); // Отправляем Vector2
+    }
+
+    private void OnStopButtonPressed() => _burner?.StopAutoMovement();
+
+    private void OnStartSequencePressed()
+    {
+        if (_savedPoints[0].X <= 0 || _savedPoints[1].X <= 0 || _savedPoints[2].X <= 0)
         {
-            targetLabel.Text = $"{_savedPoints[index]:N1} мм";
-            targetLabel.AddThemeColorOverride("font_color", _pointColors[index]);
+            ShowError("Точки не заданы!");
+            return;
         }
+        _burner?.StartAutoSequence(_savedPoints, (int)_cyclesInput.Value);
+        UpdateStatus("Старт...");
     }
 
-    private void UpdateStatus(string message) => _statusLabel.Text = message;
+    private void UpdateStatus(string msg) => _statusLabel.Text = msg;
 
-    private void OnPauseChanged(double value)
+    private void OnPauseChanged(double val)
     {
-        if (_burner != null) _burner.PauseDuration = (float)value;
-        GD.Print($"Установлена пауза: {value} сек");
+        if (_burner != null) _burner.PauseDuration = (float)val;
     }
 
-    private void OnPauseUpdated(float remainingTime) => CallDeferred(nameof(DeferredPauseUpdate), remainingTime);
-
-    private void DeferredPauseUpdate(float remainingTime)
+    private void OnPauseUpdated(float time)
     {
-        if (remainingTime > 0) UpdateStatus($"Пауза: {remainingTime:N1} сек");
-        else
-        {
-            string baseMessage = _statusLabel.Text.Contains('\n')
-                ? _statusLabel.Text.Split('\n')[0]
-                : "Готов к работе";
-            UpdateStatus(baseMessage);
-            GD.Print("Пауза завершена");
-        }
+        if (time > 0) UpdateStatus($"Пауза: {time:N1}");
+        else UpdateStatus("Работа...");
     }
 
     private void OnPauseButtonPressed()
@@ -498,43 +351,20 @@ public partial class UIController : Control
         _pauseButton.Text = _isManualPaused ? "Продолжить" : "Пауза";
         _pauseButton.AddThemeColorOverride("font_color", _isManualPaused ? Colors.Red : Colors.White);
     }
-    #endregion
-
-    #region Кнопки Движения
-    private void OnBurnerMovementStarted(Burner.MovementDirection dir)
-    {
-        string command = dir == Burner.MovementDirection.Right ? "f" : "b";
-        SendCommand(command);
-    }
-
-    private void OnBurnerMovementStopped() => SendCommand("s");
-
-    private void OnMoveButtonPressed()
-    {
-        if (float.TryParse(_positionInput.Text, out float target)) _burner?.MoveToPosition(target);
-        else ShowError("Некорректное значение позиции");
-    }
-
-    private void OnStopButtonPressed() => _burner?.StopAutoMovement();
 
     private void OnEmergencyStopPressed()
     {
         SendCommand("s");
         _burner?.EmergencyStop();
-        GD.Print("[ЭКСТРЕННО] Движение прервано");
+        GD.Print("STOP");
     }
 
-    private void OnStartSequencePressed()
+    private void ShowError(string msg)
     {
-        if (_savedPoints[0] <= 0 || _savedPoints[1] <= 0 || _savedPoints[2] <= 0)
-        {
-            ShowError("Не все точки сохранены!");
-            return;
-        }
-        _burner?.StartAutoSequence(_savedPoints, (int)_cyclesInput.Value);
-        UpdateStatus("Запуск последовательности...");
+        var d = new AcceptDialog { Title = "Error", DialogText = msg };
+        GetTree().Root.AddChild(d);
+        d.PopupCentered();
     }
-    #endregion
 
     public override void _ExitTree()
     {

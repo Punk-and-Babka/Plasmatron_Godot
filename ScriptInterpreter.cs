@@ -1,7 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Globalization; // Для InvariantCulture
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -9,7 +9,7 @@ public partial class ScriptInterpreter : Node
 {
     public enum InterpreterState { Idle, Running, Paused, Error }
 
-    [Export] private CodeEdit _scriptInput; // Заменил TextEdit на CodeEdit (в 4.x удобнее, но TextEdit тоже ок)
+    [Export] private CodeEdit _scriptInput;
     [Export] private Button _runButton;
     [Export] private Button _stopButton;
     [Export] private Label _statusLabel;
@@ -32,11 +32,11 @@ public partial class ScriptInterpreter : Node
     private int _commandCounter = 0;
     private bool _movementWasPaused;
 
-    // Переменные для больших циклов
-    private float _cyclePointA;
-    private float _cyclePointB;
+    // Переменные для циклов (Теперь Vector2!)
+    private Vector2 _cyclePointA;
+    private Vector2 _cyclePointB;
     private int _cycleCount;
-    private int _currentCycleStep; // Шаг внутри цикла (0, 1, 2...)
+    private int _currentCycleStep;
     private float _cyclePause;
     private bool _isLargeCycle;
 
@@ -45,19 +45,15 @@ public partial class ScriptInterpreter : Node
         LocateBurner();
         InitializeCommandHandlers();
 
-        if (_scriptInput != null)
-            _scriptInput.Editable = true;
-
+        if (_scriptInput != null) _scriptInput.Editable = true;
         if (_runButton != null) _runButton.Pressed += RunScript;
         if (_stopButton != null) _stopButton.Pressed += StopScript;
     }
 
     private void LocateBurner()
     {
-        // Попытка найти горелку разными способами
         if (TargetBurner == null) TargetBurner = GetParent().GetNodeOrNull<Burner>("Burner");
         if (TargetBurner == null) TargetBurner = GetNodeOrNull<Burner>("../Burner");
-        if (TargetBurner == null) TargetBurner = GetTree().Root.GetNodeOrNull<Burner>("Main/Burner");
 
         if (TargetBurner == null)
         {
@@ -77,38 +73,31 @@ public partial class ScriptInterpreter : Node
     {
         if (_state != InterpreterState.Running) return;
 
-        // 1. ОБРАБОТКА ПАУЗЫ
+        // 1. ПАУЗА
         if (_currentDelay > 0)
         {
             _currentDelay -= (float)delta;
-            if (_statusLabel != null)
-                _statusLabel.Text = $"Пауза: {_currentDelay:F1} сек";
+            if (_statusLabel != null) _statusLabel.Text = $"Пауза: {_currentDelay:F1} сек";
 
             if (_currentDelay <= 0)
             {
                 _currentDelay = 0;
-                OnPauseFinished(); // Пауза закончилась, решаем что делать дальше
+                OnPauseFinished();
             }
-            else
-            {
-                return; // Ждем окончания паузы
-            }
+            return;
         }
 
-        // 2. ОБРАБОТКА ОЖИДАНИЯ ДВИЖЕНИЯ
+        // 2. ОЖИДАНИЕ ДВИЖЕНИЯ
         if (_waitingForMovement)
         {
             _movementWaitTimer -= (float)delta;
-
-            // Проверяем статус горелки
             bool isMoving = TargetBurner != null && TargetBurner.IsMovingToTarget;
 
             if (!isMoving)
             {
-                // Движение физически завершилось
                 _waitingForMovement = false;
                 _movementWaitTimer = 0f;
-                OnMovementFinished(); // Движение закончилось, решаем что делать дальше
+                OnMovementFinished();
             }
             else if (_movementWaitTimer <= 0)
             {
@@ -118,14 +107,10 @@ public partial class ScriptInterpreter : Node
                 _waitingForMovement = false;
                 return;
             }
-            else
-            {
-                return; // Ждем окончания движения
-            }
+            return;
         }
 
-        // 3. ВЫПОЛНЕНИЕ СЛЕДУЮЩЕЙ КОМАНДЫ
-        // Если мы не ждем паузу и не ждем движения — берем следующую команду
+        // 3. СЛЕДУЮЩАЯ КОМАНДА
         ExecuteNextCommand();
     }
 
@@ -139,29 +124,24 @@ public partial class ScriptInterpreter : Node
             if (_statusLabel != null) _statusLabel.Text = "Скрипт завершен";
             ToggleButtons(false);
             ClearHighlighting();
-            GD.Print("Очередь команд пуста. Скрипт завершен.");
             return;
         }
 
-        // Получаем команду, но не удаляем, пока не узнаем индекс строки (для подсветки)
         int currentCommandIndex = _commandCounter - _commandQueue.Count;
         string commandLine = _commandQueue.Dequeue();
 
-        // Подсветка
         if (_executionIndexMap.TryGetValue(currentCommandIndex, out int originalLineIndex))
         {
             HighlightCurrentLine(originalLineIndex);
         }
 
-        // Парсинг
-        // Разбиваем по скобкам и запятым. 
-        // ВАЖНО: Разделитель запятая используется для аргументов. Дроби должны быть через точку.
+        // Парсинг аргументов
         var parts = Regex.Split(commandLine, @"\(|\)|,")
             .Select(p => p.Trim())
             .Where(p => !string.IsNullOrEmpty(p))
             .ToArray();
 
-        if (parts.Length == 0) return; // Пустая строка
+        if (parts.Length == 0) return;
 
         var command = parts[0].ToUpperInvariant();
         var args = parts.Skip(1).ToArray();
@@ -185,14 +165,12 @@ public partial class ScriptInterpreter : Node
         }
     }
 
-    // --- ЛОГИКА БОЛЬШИХ ЦИКЛОВ ---
+    // --- ЛОГИКА ЦИКЛОВ ---
 
     private void OnMovementFinished()
     {
-        // Если мы в режиме "Большой цикл", то после движения всегда идет пауза
         if (_isLargeCycle && _state == InterpreterState.Running)
         {
-            // Добавляем команду паузы в начало очереди (приоритетно)
             string pauseCmd = $"PAUSE({_cyclePause.ToString(CultureInfo.InvariantCulture)})";
             PushPriorityCommand(pauseCmd);
         }
@@ -200,54 +178,33 @@ public partial class ScriptInterpreter : Node
 
     private void OnPauseFinished()
     {
-        // Если мы в режиме "Большой цикл", то после паузы идет следующее движение
         if (_isLargeCycle && _state == InterpreterState.Running)
         {
             _currentCycleStep++;
-            // Цикл состоит из 2 шагов движения (А и Б). Всего шагов = кол-во циклов * 2.
             int totalSteps = _cycleCount * 2;
 
             if (_currentCycleStep >= totalSteps)
             {
                 GD.Print($"Большой цикл завершен ({_cycleCount} итераций)");
-                _isLargeCycle = false; // Выходим из режима цикла
-                // Дальше интерпретатор пойдет по обычной очереди, если там что-то есть
+                _isLargeCycle = false;
                 return;
             }
 
-            // Определяем, куда ехать
-            // Четные шаги (0, 2...) -> Едем в точку А (начало)
-            // Нечетные шаги (1, 3...) -> Едем в точку Б (конец)
-            // Но логика HandleCycle начинает движение с А.
-            // Значит:
-            // Шаг 0 (старт HandleCycle) -> Едем в А (уже выполнено)
-            // Пауза.
-            // Вызов OnPauseFinished. _currentCycleStep стал 1.
-            // Шаг 1 -> Едем в Б.
+            // Выбираем цель (вектор)
+            Vector2 target = (_currentCycleStep % 2 != 0) ? _cyclePointB : _cyclePointA;
 
-            float target = (_currentCycleStep % 2 != 0) ? _cyclePointB : _cyclePointA;
-            string moveCmd = $"GO({target.ToString(CultureInfo.InvariantCulture)})";
-
+            // Формируем команду GO с двумя аргументами (X, Y)
+            string moveCmd = $"GO({target.X.ToString(CultureInfo.InvariantCulture)}, {target.Y.ToString(CultureInfo.InvariantCulture)})";
             PushPriorityCommand(moveCmd);
         }
     }
 
-    // Метод добавления команды "без очереди" (для циклов)
     private void PushPriorityCommand(string cmd)
     {
-        // В C# Queue нет PushFront.
-        // Чтобы вставить вперед, создаем новую очередь.
-        // Это не очень эффективно для гигантских очередей, но для скрипта на 100 строк — ок.
         var newQueue = new Queue<string>();
-        newQueue.Enqueue(cmd); // Сначала новая команда
-
-        foreach (var c in _commandQueue)
-            newQueue.Enqueue(c); // Потом старые
-
+        newQueue.Enqueue(cmd);
+        foreach (var c in _commandQueue) newQueue.Enqueue(c);
         _commandQueue = newQueue;
-
-        // Корректируем счетчик, чтобы не сломать подсветку
-        // (Команды цикла не имеют привязки к строкам редактора)
         _commandCounter++;
     }
 
@@ -261,7 +218,7 @@ public partial class ScriptInterpreter : Node
             ["GO"] = args => HandleGo(args),
             ["CYCLE"] = args => HandleCycle(args),
             ["PAUSE"] = args => HandlePause(args),
-            ["START"] = args => GD.Print("Start marker passed"),
+            ["START"] = args => { },
             ["END"] = args => HandleEnd()
         };
     }
@@ -270,31 +227,32 @@ public partial class ScriptInterpreter : Node
     {
         if (args.Length < 1) throw new ArgumentException("Нет аргумента скорости");
         float speed = ParseFloat(args[0]);
-
         TargetBurner?.SetMovementSpeed(speed);
-        if (_statusLabel != null) _statusLabel.Text = $"Скорость: {speed} см/с";
+        if (_statusLabel != null) _statusLabel.Text = $"Скорость: {speed} мм/с";
     }
 
     private void HandleGo(string[] args)
     {
         if (args.Length < 1) throw new ArgumentException("Нет аргумента позиции");
-        float pos = ParseFloat(args[0]);
 
-        TargetBurner?.MoveToPosition(pos);
+        float x = ParseFloat(args[0]);
+        float y = 0; // По умолчанию Y = 0
 
-        // Включаем режим ожидания
+        // Если есть второй аргумент, читаем Y
+        if (args.Length > 1) y = ParseFloat(args[1]);
+
+        // ИЗМЕНЕНИЕ: Передаем Vector2
+        TargetBurner?.MoveToPosition(new Vector2(x, y));
+
         _waitingForMovement = true;
         _movementWaitTimer = WaitTimeout;
-        if (_statusLabel != null) _statusLabel.Text = $"Движение к {pos} см...";
+        if (_statusLabel != null) _statusLabel.Text = $"Движение к {x:F0}:{y:F0} мм...";
     }
 
     private void HandlePause(string[] args)
     {
         if (args.Length < 1) throw new ArgumentException("Нет аргумента времени");
         float seconds = ParseFloat(args[0]);
-
-        // Просто выставляем переменную. Timer создавать НЕ НУЖНО.
-        // _Process сам отсчитает время.
         _currentDelay = seconds;
         if (_statusLabel != null) _statusLabel.Text = $"Пауза: {seconds} сек";
     }
@@ -303,29 +261,34 @@ public partial class ScriptInterpreter : Node
     {
         if (args.Length < 3) throw new ArgumentException("Формат: CYCLE(PosA, PosB, Count, [Pause])");
 
-        float posA = ParseFloat(args[0]);
-        float posB = ParseFloat(args[1]);
-        int count = (int)ParseFloat(args[2]); // ParseFloat безопаснее int.Parse
+        // Читаем X координаты для цикла (Y пока считаем 0 для простоты линейного цикла)
+        // В будущем можно расширить до CYCLE(Ax, Ay, Bx, By...)
+        float xA = ParseFloat(args[0]);
+        float xB = ParseFloat(args[1]);
+        int count = (int)ParseFloat(args[2]);
         float pause = 0.5f;
         if (args.Length >= 4) pause = ParseFloat(args[3]);
 
         if (count <= 0) return;
 
-        UpdateGridPoints(posA, posB);
+        // Создаем векторы
+        Vector2 vecA = new Vector2(xA, 0);
+        Vector2 vecB = new Vector2(xB, 0);
 
-        // Инициализируем "Большой цикл"
-        _cyclePointA = posA;
-        _cyclePointB = posB;
+        UpdateGridPoints(vecA, vecB);
+
+        _cyclePointA = vecA;
+        _cyclePointB = vecB;
         _cycleCount = count;
         _cyclePause = pause;
         _isLargeCycle = true;
-        _currentCycleStep = 0; // Начинаем с 0
+        _currentCycleStep = 0;
 
-        GD.Print($"Старт цикла: {posA} <-> {posB}, {count} раз");
+        GD.Print($"Старт цикла: {vecA} <-> {vecB}, {count} раз");
 
-        // Генерируем ПЕРВУЮ команду движения. 
-        // Остальные (Пауза -> Движение Б -> Пауза...) будут добавлены автоматически в _Process.
-        PushPriorityCommand($"GO({posA.ToString(CultureInfo.InvariantCulture)})");
+        // Запуск первого шага
+        string startCmd = $"GO({vecA.X.ToString(CultureInfo.InvariantCulture)}, {vecA.Y.ToString(CultureInfo.InvariantCulture)})";
+        PushPriorityCommand(startCmd);
     }
 
     private void HandleEnd()
@@ -340,17 +303,11 @@ public partial class ScriptInterpreter : Node
 
     // --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
 
-    // Безопасный парсинг дробных чисел (10.5 и 10)
     private float ParseFloat(string input)
     {
-        // Заменяем запятую на точку на случай, если пользователь ошибся, 
-        // НО только если это не сломает аргументы (здесь мы парсим уже отдельный аргумент)
         input = input.Replace(',', '.');
-
         if (float.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
-        {
             return result;
-        }
         throw new FormatException($"Неверный формат числа: '{input}'");
     }
 
@@ -373,8 +330,6 @@ public partial class ScriptInterpreter : Node
         {
             _state = InterpreterState.Paused;
             if (_statusLabel != null) _statusLabel.Text = "Пауза (Польз.)";
-
-            // Если горелка ехала, ставим на паузу
             if (TargetBurner != null && !TargetBurner.IsManualPaused)
             {
                 TargetBurner.SetManualPause(true);
@@ -385,8 +340,6 @@ public partial class ScriptInterpreter : Node
         {
             _state = InterpreterState.Running;
             if (_statusLabel != null) _statusLabel.Text = "Продолжение...";
-
-            // Снимаем с паузы
             if (TargetBurner != null && _movementWasPaused)
             {
                 TargetBurner.SetManualPause(false);
@@ -406,20 +359,20 @@ public partial class ScriptInterpreter : Node
         for (int i = 0; i < lines.Length; i++)
         {
             string line = lines[i].Trim();
-            // Игнорируем пустые строки и комментарии
             if (string.IsNullOrEmpty(line) || line.StartsWith("//") || line.StartsWith("#"))
                 continue;
 
-            _executionIndexMap[_commandCounter] = i; // Запоминаем номер строки для подсветки
+            _executionIndexMap[_commandCounter] = i;
             _commandQueue.Enqueue(line);
             _commandCounter++;
         }
     }
 
-    private void UpdateGridPoints(float a, float b)
+    private void UpdateGridPoints(Vector2 a, Vector2 b)
     {
         if (_grid == null) return;
-        float[] pts = { a, b, -1 };
+        // Передаем массив векторов
+        Vector2[] pts = { a, b, Vector2.Zero };
         Color[] cols = { Colors.Yellow, Colors.Orange, Colors.Transparent };
         _grid.UpdatePoints(pts, cols);
     }
@@ -433,20 +386,13 @@ public partial class ScriptInterpreter : Node
     private void HighlightCurrentLine(int lineIndex)
     {
         if (_scriptInput == null) return;
-
-        // Используем встроенные методы CodeEdit/TextEdit, если это TextEdit, API немного другое
-        // Для универсальности используем простой цвет фона, если поддерживается
-
-        // Очистка старой подсветки (грубый метод для TextEdit - перерисовка)
-        // В Godot 4 CodeEdit имеет спец методы set_line_background_color
-
         if (_lastHighlightedLine >= 0 && _lastHighlightedLine < _scriptInput.GetLineCount())
             _scriptInput.SetLineBackgroundColor(_lastHighlightedLine, new Color(0, 0, 0, 0));
 
         if (lineIndex >= 0 && lineIndex < _scriptInput.GetLineCount())
         {
             _scriptInput.SetLineBackgroundColor(lineIndex, new Color(0.2f, 0.6f, 1f, 0.25f));
-            _scriptInput.SetLineAsCenterVisible(lineIndex); // Прокрутка к строке
+            _scriptInput.SetLineAsCenterVisible(lineIndex);
             _lastHighlightedLine = lineIndex;
         }
     }

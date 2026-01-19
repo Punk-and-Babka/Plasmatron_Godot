@@ -1,10 +1,9 @@
 using Godot;
 using System;
-using static Godot.TextServer;
 
 public partial class Burner : Node2D
 {
-    public enum MovementDirection { Left, Right }
+    // region СОБЫТИЯ И СВОЙСТВА
     public bool IsManualPaused => _isManualPaused;
 
     [ExportGroup("UI Settings")]
@@ -14,636 +13,390 @@ public partial class Burner : Node2D
 
     [Signal] public delegate void SequenceFinishedEventHandler();
 
-    private float _pauseDuration = 3f;
-    private float _pauseTimer;
-    private bool _isPaused;
     public event Action<float> PauseUpdated;
-    public event Action<float> PositionChanged;
+    public event Action<Vector2> PositionChanged;
     public event Action<float> SpeedChanged;
 
-    private bool _isDecelerating;
     private UIController _uiController;
 
-    public float TargetPosition { get; private set; }
+    // --- ФИЗИКА (Vector2) ---
+    public Vector2 TargetPosition { get; private set; }
     public bool IsMovingToTarget { get; private set; }
 
-    // Порог остановки: 0.1 см = 1.0 мм
-    private float _stopThreshold = 1.0f;
+    // Свойство для UI (возвращает длину вектора скорости)
+    public float CurrentSpeedScalar => _currentVelocity.Length();
 
-    // Проверка границ: 0.1 см = 1.0 мм
-    public bool IsAtLeftBound => PositionXMM <= 1.0f;
-    public bool IsAtRightBound => PositionXMM >= MaxPositionXMM - 1.0f;
+    // Порог прибытия (1 мм)
+    private float _stopRadius = 1.0f;
 
+    // Границы
+    private Vector2 MaxPositionMM => _grid != null
+        ? new Vector2(_grid.RealWorldWidthMM - RealWidthMM, _grid.RealWorldHeightMM - RealHeightMM)
+        : new Vector2(100, 100);
+
+    // Автоматизация
     private bool _isAutoSequenceActive;
     private int _currentTargetIndex;
     private int _cyclesRemaining;
-    private float[] _sequencePoints = new float[3];
+    private Vector2[] _sequencePoints = new Vector2[3];
     private bool _isManualPaused;
     private float _baseSpeed;
-
-    // Быстрая скорость: 30 см/с -> 300 мм/с
     private float _fastSpeed = 300f;
 
     public bool IsAutoSequenceActive => _isAutoSequenceActive;
     public int CyclesRemaining => _cyclesRemaining;
 
-    // region Основные параметры горелки (В МИЛЛИМЕТРАХ)
-    [ExportGroup("Размеры")]
-    [Export] public float RealWidthMM { get; set; } = 100f;   // 100 мм (было 10 см)
-    [Export] public float RealHeightMM { get; set; } = 72f;   // 72 мм (было 7.2 см)
+    // region ПАРАМЕТРЫ
+    [ExportGroup("Размеры (мм)")]
+    [Export] public float RealWidthMM { get; set; } = 100f;
+    [Export] public float RealHeightMM { get; set; } = 72f;
 
     [ExportGroup("Внешний вид")]
     [Export] public Color BurnerColor { get; set; } = new Color(1, 0.5f, 0, 0.8f);
 
     [ExportGroup("Движение")]
-    [Export] public float MaxSpeedMM { get; set; } = 100f;    // 100 мм/с (было 10 см/с)
-
-    [Export(PropertyHint.Range, "0.1,5.0")]
-    public float AccelerationTime = 0.25f;
-    [Export(PropertyHint.Range, "0.1,5.0")]
-    public float DecelerationTime = 0.25f;
+    [Export] public float MaxSpeedMM { get; set; } = 100f;
+    [Export] public float AccelerationTime = 0.25f;
+    [Export] public float DecelerationTime = 0.25f;
 
     [ExportGroup("Связи")]
     [Export] private CoordinateGrid _grid;
     // endregion
 
-    [Export]
-    public float PauseDuration
-    {
-        get => _pauseDuration;
-        set => _pauseDuration = Mathf.Max(value, 0.1f);
-    }
+    [Export] public float PauseDuration { get; set; } = 3.0f;
+    private float _pauseTimer;
+    private bool _isPaused;
 
-    // region Внутренние состояния
-    private float _currentSpeedMM;     // Текущая скорость (мм/сек)
-    public float CurrentSpeedMM
+    // Внутренние переменные физики
+    private float _accelerationRate;
+    private float _decelerationRate;
+
+    // ИЗМЕНЕНИЕ: Используем вектор скорости для инерции по всем осям
+    private Vector2 _currentVelocity;
+    private Vector2 _positionMM;
+
+    public Vector2 PositionMM
     {
-        get => _currentSpeedMM;
+        get => _positionMM;
         private set
         {
-            if (Mathf.IsEqualApprox(_currentSpeedMM, value)) return;
-            _currentSpeedMM = value;
-            SpeedChanged?.Invoke(value);
+            // Ограничение границ
+            float x = Mathf.Clamp(value.X, 0, MaxPositionMM.X);
+            float y = Mathf.Clamp(value.Y, 0, MaxPositionMM.Y);
+            Vector2 clamped = new Vector2(x, y);
+
+            if (!_positionMM.IsEqualApprox(clamped))
+            {
+                _positionMM = clamped;
+                PositionChanged?.Invoke(_positionMM);
+                QueueRedraw();
+            }
         }
     }
 
-    private float _positionXMM;        // Позиция по X в миллиметрах
-    private float _accelerationRate;   // мм/сек²
-    private float _decelerationRate;   // мм/сек²
-    // endregion
-
-
-    // region Свойства
-    /// <summary>
-    /// Текущая позиция горелки в мм
-    /// </summary>
-    public float PositionXMM
-    {
-        get => _positionXMM;
-        private set
-        {
-            value = Mathf.Clamp(value, 0f, MaxPositionXMM);
-
-            if (Mathf.IsEqualApprox(_positionXMM, value)) return;
-
-            _positionXMM = value;
-            PositionChanged?.Invoke(value);
-            QueueRedraw();
-        }
-    }
-
-    /// <summary>
-    /// Максимально допустимая позиция (правая граница минус ширина горелки)
-    /// </summary>
-    private float MaxPositionXMM =>
-        _grid != null ? Mathf.Max(_grid.RealWorldWidthMM - RealWidthMM, 0) : 0f;
-    // endregion
-
-    // region Жизненный цикл
     public override void _Ready()
     {
         AddToGroup("burners");
-        if (_grid == null)
-            _grid = GetParent().GetNode<CoordinateGrid>("CoordinateGrid");
+        if (_grid == null) _grid = GetParent().GetNodeOrNull<CoordinateGrid>("CoordinateGrid");
+        _uiController = GetNodeOrNull<UIController>("../UIController");
 
-        ZIndex = 3;
+        CalculatePhysicsRates();
 
-        _uiController = GetNode<UIController>("../UIController");
-
-        // Расчет ускорения в мм/с²
-        _accelerationRate = MaxSpeedMM / AccelerationTime;
-        _decelerationRate = MaxSpeedMM / DecelerationTime;
-
-        if (_positionLabel == null)
-        {
-            _positionLabel = GetNode<Label>("../CanvasLayer/PositionLabel");
-        }
-
-        if (_speedSlider != null)
-        {
-            ConnectSlider();
-        }
+        if (_positionLabel == null) _positionLabel = GetNodeOrNull<Label>("../CanvasLayer/PositionLabel");
+        if (_speedSlider == null) _speedSlider = GetNodeOrNull<HSlider>("../CanvasLayer/UIController/VBoxContainer/SpeedSlider");
+        if (_speedSlider != null) ConnectSlider();
     }
 
-    private float _updateTimer;
+    private void CalculatePhysicsRates()
+    {
+        _accelerationRate = AccelerationTime > 0 ? MaxSpeedMM / AccelerationTime : MaxSpeedMM * 10;
+        _decelerationRate = DecelerationTime > 0 ? MaxSpeedMM / DecelerationTime : MaxSpeedMM * 10;
+    }
+
+    private float _uiUpdateTimer;
     public override void _Process(double delta)
     {
-        HandleMovement((float)delta);
+        float dt = (float)delta;
 
-        _updateTimer += (float)delta;
-        if (_updateTimer > 0.1f)
+        // 1. Пауза
+        if (_isPaused && _isAutoSequenceActive && !_isManualPaused)
         {
-            _updateTimer = 0;
-            // GD.Print($"Speed: {_currentSpeedMM:N1}");
-        }
-    }
-    // endregion
-
-    private float _savedSpeedBeforePause;
-    private float _savedTargetBeforePause;
-    private bool _wasMovingBeforePause;
-
-    public void SetManualPause(bool state)
-    {
-        if (_isManualPaused == state) return;
-
-        _isManualPaused = state;
-
-        if (_isManualPaused)
-        {
-            _savedSpeedBeforePause = MaxSpeedMM;
-            _savedTargetBeforePause = TargetPosition;
-            _wasMovingBeforePause = IsMovingToTarget;
-
-            SendStopCommand();
-            GD.Print("Ручная пауза активирована");
-        }
-        else
-        {
-            if (_wasMovingBeforePause)
-            {
-                MaxSpeedMM = _savedSpeedBeforePause;
-                MoveToPosition(_savedTargetBeforePause);
-            }
-            GD.Print("Ручная пауза деактивирована");
-        }
-    }
-
-    public void ResetSequenceState()
-    {
-        _isAutoSequenceActive = false;
-        _isPaused = false;
-        _isDecelerating = false;
-        IsMovingToTarget = false;
-        _currentTargetIndex = -1;
-        _pauseTimer = 0;
-        _isManualPaused = false;
-
-        SendStopCommand();
-        GD.Print("Полный сброс состояния последовательности");
-    }
-
-    public void StartAutoSequence(float[] points, int cycles)
-    {
-        ResetSequenceState();
-
-        if (points.Length != 3) return;
-
-        _baseSpeed = MaxSpeedMM;
-        _sequencePoints = points; // Предполагается, что точки уже приходят в ММ
-        _cyclesRemaining = cycles;
-        _currentTargetIndex = 0;
-        _isAutoSequenceActive = true;
-
-        GD.Print($"Запуск последовательности. Циклов: {cycles}");
-
-        if (Mathf.IsEqualApprox(PositionXMM, _sequencePoints[0]))
-        {
-            GD.Print("Уже в точке 0. Переходим к точке 1.");
-            _currentTargetIndex = 1;
-            SetMovementSpeed(_fastSpeed);
-            MoveToPosition(_sequencePoints[1]);
-        }
-        else
-        {
-            SetMovementSpeed(_fastSpeed);
-            MoveToPosition(_sequencePoints[0]);
-        }
-    }
-
-    public void SetMovementSpeed(float speed)
-    {
-        if (Mathf.IsEqualApprox(MaxSpeedMM, speed)) return;
-
-        MaxSpeedMM = speed;
-        _accelerationRate = MaxSpeedMM / AccelerationTime;
-        _decelerationRate = MaxSpeedMM / DecelerationTime;
-
-        SpeedChanged?.Invoke(MaxSpeedMM);
-        _uiController?.SendSpeedCommand(MaxSpeedMM);
-        _uiController?.UpdateSpeedSlider(MaxSpeedMM);
-    }
-
-    public void StopAutoSequence()
-    {
-        _isAutoSequenceActive = false;
-        SetMovementSpeed(_baseSpeed);
-        StopAutoMovement();
-    }
-
-    public void HandleMovementCompletion()
-    {
-        if (!_isAutoSequenceActive || !IsAtTargetPosition() || _isPaused)
-            return;
-
-        switch (_currentTargetIndex)
-        {
-            case 0:
-                if (_cyclesRemaining > 0)
-                {
-                    SetMovementSpeed(_fastSpeed);
-                    MoveToPosition(_sequencePoints[1]);
-                    _currentTargetIndex = 1;
-                }
-                else
-                {
-                    GD.Print("Финишная точка достигнута");
-                    _currentTargetIndex = -1;
-
-                    if (!_isPaused)
-                    {
-                        _isAutoSequenceActive = false;
-                        EmitSignal(nameof(SequenceFinished));
-                    }
-
-                    StartPauseBeforeMovement(_sequencePoints[0], -1);
-                }
-                break;
-
-            case 1:
-                if (_cyclesRemaining > 0)
-                {
-                    SetMovementSpeed(_baseSpeed);
-                    StartPauseBeforeMovement(_sequencePoints[2], 2);
-                }
-                else
-                {
-                    StartPauseBeforeMovement(_sequencePoints[0], 0);
-                }
-                break;
-
-            case 2:
-                StartPauseBeforeMovement(_sequencePoints[1], 1);
-                _cyclesRemaining = Math.Max(0, _cyclesRemaining - 1);
-                GD.Print($"Осталось циклов: {_cyclesRemaining}");
-                break;
-        }
-    }
-
-    private void StartPauseBeforeMovement(float target, int nextIndex)
-    {
-        CancelCurrentPause();
-
-        _isAutoSequenceActive = true;
-        SetMovementSpeed(nextIndex == 0 ? _fastSpeed : _baseSpeed);
-
-        _isPaused = true;
-        _pauseTimer = PauseDuration;
-
-        GD.Print($"Начало паузы перед движением к точке {nextIndex}");
-        AsyncPause(() =>
-        {
-            if (!_isAutoSequenceActive)
-            {
-                GD.Print("Пауза отменена: последовательность прервана");
-                return;
-            }
-
-            if (nextIndex == -1)
-            {
-                _isAutoSequenceActive = false;
-                EmitSignal(nameof(SequenceFinished));
-                GD.Print("Последовательность завершена");
-                return;
-            }
-
-            GD.Print($"Пауза завершена. Движение к цели: {target}");
-            MoveToPosition(target);
-            _currentTargetIndex = nextIndex;
-        });
-    }
-
-    private void CancelCurrentPause()
-    {
-        _isPaused = false;
-        _pauseTimer = 0;
-    }
-
-    private async void AsyncPause(Action callback)
-    {
-        try
-        {
-            while (_pauseTimer > 0 && _isPaused)
-            {
-                await ToSignal(GetTree().CreateTimer(1.0), "timeout");
-                _pauseTimer -= 1f;
-                CallDeferred(nameof(UpdatePauseDelegate), _pauseTimer);
-                GD.Print($"Пауза: {_pauseTimer} сек");
-            }
-
-            if (_isAutoSequenceActive)
-            {
-                _isPaused = false;
-                callback?.Invoke();
-            }
-        }
-        catch (Exception ex)
-        {
-            GD.PrintErr($"Ошибка в AsyncPause: {ex}");
-        }
-    }
-
-    private void UpdatePauseDelegate(float timer)
-    {
-        PauseUpdated?.Invoke(timer);
-    }
-
-    private bool IsAtTargetPosition()
-    {
-        return Mathf.Abs(PositionXMM - TargetPosition) <= _stopThreshold;
-    }
-
-    private void SendMovementCommand(MovementDirection direction)
-    {
-        if (!CanMoveInDirection(direction))
-        {
-            GD.Print("Движение заблокировано: достигнута граница");
+            _pauseTimer -= dt;
+            PauseUpdated?.Invoke(Mathf.Max(0, _pauseTimer));
+            if (_pauseTimer <= 0) CompletePause();
             return;
         }
 
-        if (_uiController == null) return;
+        // 2. Физика
+        HandlePhysics(dt);
 
-        string command = direction == MovementDirection.Right ? "f" : "b";
-        _uiController.SendCommand(command);
+        // 3. Обновление UI
+        _uiUpdateTimer += dt;
+        if (_uiUpdateTimer > 0.05f)
+        {
+            _uiUpdateTimer = 0;
+            UpdateUI();
+        }
     }
 
-    private void SendStopCommand()
+    private void UpdateUI()
     {
-        if (_uiController == null) return;
-        _uiController.SendCommand("s");
+        if (_positionLabel != null)
+        {
+            _positionLabel.Text = $"Позиция: {PositionMM.X:F1} : {PositionMM.Y:F1} мм\n" +
+                                  $"Скорость: {CurrentSpeedScalar:F0} мм/сек";
+        }
+    }
+
+    // --- ЯДРО ФИЗИКИ (ИСПРАВЛЕНО) ---
+    private void HandlePhysics(float delta)
+    {
+        if (_isManualPaused) return;
+
+        Vector2 targetVelocity = Vector2.Zero;
+        float currentRate = _decelerationRate; // По умолчанию тормозим
+
+        if (IsMovingToTarget)
+        {
+            // 1. Автоматическое движение
+            Vector2 diff = TargetPosition - PositionMM;
+            float dist = diff.Length();
+
+            if (dist < _stopRadius)
+            {
+                // Приехали
+                PositionMM = TargetPosition;
+                _currentVelocity = Vector2.Zero;
+                StopAutoMovement();
+                return;
+            }
+
+            // Рассчитываем идеальную скорость торможения: V = Sqrt(2 * a * S)
+            float maxPermittedSpeed = Mathf.Sqrt(2 * _decelerationRate * dist);
+            // Ограничиваем максималкой
+            float targetSpeed = Mathf.Min(MaxSpeedMM, maxPermittedSpeed);
+
+            // Задаем вектор целевой скорости
+            targetVelocity = diff.Normalized() * targetSpeed;
+
+            // Если целевая скорость выше текущей - разгоняемся, иначе - это торможение
+            // Но для плавности используем ускорение, если мы еще не тормозим перед целью
+            currentRate = targetSpeed < MaxSpeedMM ? _decelerationRate : _accelerationRate;
+        }
+        else if (!IsAutoSequenceActive)
+        {
+            // 2. Ручное управление
+            float inputX = Input.GetAxis("Burner_left", "Burner_right");
+            // float inputY = Input.GetAxis("Burner_up", "Burner_down"); // Для будущего Y
+
+            Vector2 inputDir = new Vector2(inputX, 0).Normalized();
+
+            if (inputDir != Vector2.Zero)
+            {
+                // Если есть ввод - целевая скорость = Макс * Направление
+                targetVelocity = inputDir * MaxSpeedMM;
+                currentRate = _accelerationRate; // Используем скорость разгона
+            }
+            else
+            {
+                // Если ввода нет - цель 0, используем скорость торможения
+                targetVelocity = Vector2.Zero;
+                currentRate = _decelerationRate;
+            }
+        }
+
+        // Применяем инерцию: плавно меняем текущую скорость к целевой
+        _currentVelocity = _currentVelocity.MoveToward(targetVelocity, currentRate * delta);
+
+        // Двигаем объект
+        PositionMM += _currentVelocity * delta;
+    }
+
+    // --- УПРАВЛЕНИЕ ---
+    public void MoveToPosition(Vector2 target)
+    {
+        float x = Mathf.Clamp(target.X, 0, MaxPositionMM.X);
+        float y = Mathf.Clamp(target.Y, 0, MaxPositionMM.Y);
+        TargetPosition = new Vector2(x, y);
+
+        if (!_isManualPaused)
+        {
+            IsMovingToTarget = true;
+            SendMovementCommand(TargetPosition);
+        }
     }
 
     public void StopAutoMovement()
     {
         if (IsMovingToTarget)
         {
-            GD.Print("Остановка автоматического движения");
             IsMovingToTarget = false;
-            _isDecelerating = false;
             SendStopCommand();
-            HandleMovementCompletion();
+            if (_isAutoSequenceActive) HandleMovementCompletion();
         }
     }
 
-    public void MoveToPosition(float target)
+    // --- АВТОМАТИЗАЦИЯ ---
+    public void StartAutoSequence(Vector2[] points, int cycles)
     {
-        TargetPosition = Mathf.Clamp(target, 0, MaxPositionXMM);
+        ResetSequenceState();
+        if (points.Length < 3) return;
 
-        if (!_isManualPaused)
+        _sequencePoints = points;
+        _cyclesRemaining = cycles;
+        _baseSpeed = MaxSpeedMM;
+        _isAutoSequenceActive = true;
+
+        float distToP0 = PositionMM.DistanceTo(_sequencePoints[0]);
+
+        if (distToP0 < _stopRadius)
         {
-            IsMovingToTarget = true;
-            _isDecelerating = false;
-
-            GD.Print($"Новая цель: {TargetPosition:N1} мм");
-            var direction = TargetPosition > PositionXMM ?
-                MovementDirection.Right :
-                MovementDirection.Left;
-            SendMovementCommand(direction);
-        }
-    }
-
-    public void EmergencyStop()
-    {
-        _isManualPaused = false;
-        _isPaused = false;
-
-        if (_isAutoSequenceActive)
-        {
-            _isAutoSequenceActive = false;
-            EmitSignal(nameof(SequenceFinished));
-        }
-
-        StopAutoMovement();
-        ResetToBaseSpeed();
-    }
-
-    public void ResetToBaseSpeed()
-    {
-        if (!Mathf.IsEqualApprox(MaxSpeedMM, _baseSpeed))
-        {
-            MaxSpeedMM = _baseSpeed;
-            _accelerationRate = MaxSpeedMM / AccelerationTime;
-            _decelerationRate = MaxSpeedMM / DecelerationTime;
-            _uiController?.SendSpeedCommand(MaxSpeedMM);
-        }
-    }
-
-    private void HandleAutoMovement(float delta)
-    {
-        if (_isManualPaused) return;
-
-        float distance = TargetPosition - PositionXMM;
-        float direction = Mathf.Sign(distance);
-        float decelerationDistance = CalculateDecelerationDistance();
-        bool shouldDecelerate = Mathf.Abs(distance) <= decelerationDistance;
-
-        if (shouldDecelerate && !_isDecelerating)
-        {
-            _isDecelerating = true;
-            SendStopCommand();
-        }
-
-        if (_isDecelerating)
-        {
-            CurrentSpeedMM = Mathf.MoveToward(
-                CurrentSpeedMM,
-                0f,
-                _decelerationRate * delta
-            );
+            GD.Print("Уже в точке 0. Едем в точку 1.");
+            _currentTargetIndex = 1;
+            SetMovementSpeed(_fastSpeed);
+            MoveToPosition(_sequencePoints[1]);
         }
         else
         {
-            CurrentSpeedMM = Mathf.MoveToward(
-                CurrentSpeedMM,
-                MaxSpeedMM * direction,
-                _accelerationRate * delta
-            );
-        }
-
-        PositionXMM += CurrentSpeedMM * delta;
-
-        if (_isDecelerating && Mathf.Abs(CurrentSpeedMM) < _stopThreshold)
-        {
-            PositionXMM = TargetPosition;
-            StopAutoMovement();
+            _currentTargetIndex = 0;
+            SetMovementSpeed(_fastSpeed);
+            MoveToPosition(_sequencePoints[0]);
         }
     }
 
-    private float CalculateDecelerationDistance()
+    private void HandleMovementCompletion()
     {
-        float currentSpeed = Mathf.Abs(CurrentSpeedMM);
-        return (currentSpeed * currentSpeed) / (2 * _decelerationRate);
-    }
+        if (_isPaused) return;
 
-    // region Логика движения
-    private MovementDirection _currentDirection;
-    private bool _isMoving;
-
-    private void HandleMovement(float delta)
-    {
-        if (IsMovingToTarget)
+        switch (_currentTargetIndex)
         {
-            HandleAutoMovement(delta);
-            return;
-        }
-
-        float input = Input.GetActionStrength("Burner_right")
-                    - Input.GetActionStrength("Burner_left");
-
-        if (IsAtRightBound && input > 0)
-        {
-            input = 0;
-            GD.Print("Достигнута правая граница!");
-        }
-        else if (IsAtLeftBound && input < 0)
-        {
-            input = 0;
-            GD.Print("Достигнута левая граница!");
-        }
-
-        if (!Mathf.IsZeroApprox(input))
-        {
-            var newDirection = input > 0 ? MovementDirection.Right : MovementDirection.Left;
-
-            if (newDirection != _currentDirection || !_isMoving)
-            {
-                if (CanMoveInDirection(newDirection))
+            case 0: // Дома
+                if (_cyclesRemaining > 0)
                 {
-                    _currentDirection = newDirection;
-                    _isMoving = true;
-                    MovementStarted?.Invoke(_currentDirection);
+                    SetMovementSpeed(_fastSpeed);
+                    _currentTargetIndex = 1;
+                    MoveToPosition(_sequencePoints[1]);
                 }
                 else
                 {
-                    input = 0;
+                    _isAutoSequenceActive = false;
+                    EmitSignal(nameof(SequenceFinished));
+                    GD.Print("Последовательность завершена");
                 }
-            }
+                break;
+
+            case 1: // В начале реза
+                if (_cyclesRemaining > 0)
+                {
+                    SetMovementSpeed(_baseSpeed);
+                    StartPauseAndMove(_sequencePoints[2], 2);
+                }
+                else
+                {
+                    StartPauseAndMove(_sequencePoints[0], 0);
+                }
+                break;
+
+            case 2: // В конце реза
+                _cyclesRemaining--;
+                StartPauseAndMove(_sequencePoints[1], 1);
+                break;
         }
-        else
-        {
-            if (_isMoving)
-            {
-                _isMoving = false;
-                MovementStopped?.Invoke();
-            }
-        }
-
-        if (_isMoving)
-        {
-            Accelerate(input, delta);
-        }
-        else
-        {
-            Decelerate(delta);
-        }
-
-        PositionXMM += CurrentSpeedMM * delta;
     }
 
-    private bool CanMoveInDirection(MovementDirection direction)
+    private Vector2 _nextAfterPauseTarget;
+    private int _nextAfterPauseIndex;
+
+    private void StartPauseAndMove(Vector2 nextTarget, int nextIndex)
     {
-        return direction switch
-        {
-            MovementDirection.Left => !IsAtLeftBound,
-            MovementDirection.Right => !IsAtRightBound,
-            _ => true
-        };
+        _isPaused = true;
+        _pauseTimer = PauseDuration;
+        _nextAfterPauseTarget = nextTarget;
+        _nextAfterPauseIndex = nextIndex;
     }
 
-    public event Action MovementStopped;
-    public event Action<MovementDirection> MovementStarted;
-
-    private void Accelerate(float input, float delta)
+    private void CompletePause()
     {
-        float targetSpeed = input * MaxSpeedMM;
-        CurrentSpeedMM = Mathf.MoveToward(
-            _currentSpeedMM,
-            targetSpeed,
-            _accelerationRate * delta
-        );
+        _isPaused = false;
+        if (!_isAutoSequenceActive) return;
+        _currentTargetIndex = _nextAfterPauseIndex;
+        MoveToPosition(_nextAfterPauseTarget);
     }
 
-    private void Decelerate(float delta)
+    public void ResetSequenceState()
     {
-        CurrentSpeedMM = Mathf.MoveToward(
-            _currentSpeedMM,
-            0f,
-            _decelerationRate * delta
-        );
+        _isAutoSequenceActive = false;
+        IsMovingToTarget = false;
+        _isPaused = false;
+        _isManualPaused = false;
+        SendStopCommand();
     }
-    // endregion
 
-    // region Отрисовка
-    public override void _Draw()
+    // --- COM & UI ---
+    private void SendMovementCommand(Vector2 target)
     {
-        if (_grid?.GridArea.Size == Vector2.Zero) return;
-
-        // 1. Рассчитываем размеры в пикселях через PixelsPerMM
-        Vector2 burnerSize = new Vector2(
-            RealWidthMM * _grid.PixelsPerMM_X,
-            RealHeightMM * _grid.PixelsPerMM_Y
-        );
-
-        // 2. Корректируем позицию
-        Vector2 burnerPos = new Vector2(
-            _grid.GridArea.Position.X + (PositionXMM * _grid.PixelsPerMM_X) - burnerSize.X / 2,
-            _grid.GridArea.Position.Y + _grid.GridArea.Size.Y - burnerSize.Y
-        );
-
-        // 3. Отрисовка
-        DrawRect(new Rect2(burnerPos, burnerSize), BurnerColor, true);
-        DrawRect(new Rect2(burnerPos, burnerSize), Colors.White, false, 2);
-
-        float flameHeight = burnerSize.Y * 0.7f;
-        Vector2[] flamePoints = {
-            burnerPos + new Vector2(burnerSize.X/2, -flameHeight/2),
-            burnerPos + new Vector2(burnerSize.X/4, -flameHeight),
-            burnerPos + new Vector2(burnerSize.X*0.75f, -flameHeight)
-        };
-
-        DrawColoredPolygon(flamePoints, new Color(1, 0, 0, 0.6f));
+        if (_uiController == null) return;
+        string cmd = target.X > PositionMM.X ? "f" : "b";
+        _uiController.SendCommand(cmd);
     }
-    // endregion
 
-    private void ConnectSlider()
+    private void SendStopCommand() => _uiController?.SendCommand("s");
+
+    public void SetMovementSpeed(float speed)
     {
-        _speedSlider.ValueChanged += OnSpeedChanged;
+        if (Mathf.IsEqualApprox(MaxSpeedMM, speed)) return;
+        MaxSpeedMM = speed;
+        CalculatePhysicsRates();
+
+        SpeedChanged?.Invoke(MaxSpeedMM);
+        _uiController?.SendSpeedCommand(MaxSpeedMM);
+        _uiController?.UpdateSpeedSlider(MaxSpeedMM);
         UpdateSpeedDisplay(MaxSpeedMM);
     }
 
-    private void OnSpeedChanged(double value)
+    private void ConnectSlider()
     {
-        MaxSpeedMM = (float)value;
-        _accelerationRate = MaxSpeedMM / AccelerationTime;
-        _decelerationRate = MaxSpeedMM / DecelerationTime;
+        _speedSlider.ValueChanged += v => SetMovementSpeed((float)v);
         UpdateSpeedDisplay(MaxSpeedMM);
     }
 
     private void UpdateSpeedDisplay(float speed)
     {
-        if (_speedLabel != null)
-        {
-            _speedLabel.Text = $"Скорость: {speed:N0} мм/сек";
-        }
+        if (_speedLabel != null) _speedLabel.Text = $"Скорость: {speed:N0} мм/сек";
+    }
+
+    public void SetManualPause(bool state)
+    {
+        _isManualPaused = state;
+        if (state) SendStopCommand();
+        else if (IsMovingToTarget) MoveToPosition(TargetPosition);
+    }
+
+    public void EmergencyStop()
+    {
+        ResetSequenceState();
+        SetMovementSpeed(100f);
+    }
+
+    // --- ОТРИСОВКА ---
+    public override void _Draw()
+    {
+        if (_grid?.GridArea.Size == Vector2.Zero) return;
+
+        Vector2 sizePx = new Vector2(RealWidthMM * _grid.PixelsPerMM_X, RealHeightMM * _grid.PixelsPerMM_Y);
+        float x = _grid.GridArea.Position.X + (PositionMM.X * _grid.PixelsPerMM_X) - sizePx.X / 2;
+        float y = _grid.GridArea.Position.Y + (_grid.RealWorldHeightMM - PositionMM.Y) * _grid.PixelsPerMM_Y - sizePx.Y;
+        Vector2 pos = new Vector2(x, y);
+
+        DrawRect(new Rect2(pos, sizePx), BurnerColor, true);
+        DrawRect(new Rect2(pos, sizePx), Colors.White, false, 2);
+
+        float flameH = sizePx.Y * 0.7f;
+        Vector2[] flame = {
+            pos + new Vector2(sizePx.X/2, sizePx.Y + flameH),
+            pos + new Vector2(sizePx.X/4, sizePx.Y),
+            pos + new Vector2(sizePx.X*0.75f, sizePx.Y)
+        };
+        DrawColoredPolygon(flame, new Color(1, 0, 0, 0.6f));
     }
 }
