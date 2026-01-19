@@ -1,5 +1,6 @@
-[gd_scene load_steps=10 format=3 uid="uid://cwwl6wahc6xgq"]
+[gd_scene load_steps=11 format=3 uid="uid://cwwl6wahc6xgq"]
 
+[ext_resource type="Theme" uid="uid://6ev0iiyyr54k" path="res://plasma_theme.tres" id="1_20pc6"]
 [ext_resource type="Script" uid="uid://bl5bb782ddrgv" path="res://UIController.cs" id="1_wkp8b"]
 [ext_resource type="PackedScene" uid="uid://f8ijx82pgt4v" path="res://ui/about_window.tscn" id="2_20pc6"]
 [ext_resource type="PackedScene" uid="uid://blx66uippcuma" path="res://PortSelectionWindow.tscn" id="3_5vvyt"]
@@ -10,104 +11,102 @@
 [ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="9_kjvhd"]
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
 
-[node name="CanvasLayer" type="CanvasLayer"]
-
-[node name="WhitePanel" type="ColorRect" parent="."]
-custom_minimum_size = Vector2(1280, 720)
+[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_savePoint0Button", "_savePoint1Button", "_savePoint2Button", "_point0Label", "_point1Label", "_point2Label", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter")]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.493545, 0.493546, 0.493546, 1)
-metadata/_edit_use_anchors_ = true
-
-[node name="UIController" type="Control" parent="." node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_savePoint0Button", "_savePoint1Button", "_savePoint2Button", "_point0Label", "_point1Label", "_point2Label")]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+theme = ExtResource("1_20pc6")
 script = ExtResource("1_wkp8b")
-_grid = NodePath("../CoordinateGrid")
-_positionInput = NodePath("LineEdit")
-_moveButton = NodePath("LineEdit/Button")
-_stopButton = NodePath("LineEdit/Button2")
-_burner = NodePath("../Burner")
-_speedSlider = NodePath("VBoxContainer/SpeedSlider")
-_speedInput = NodePath("VBoxContainer/SpeedInputHandler")
-_lblPositionValue = NodePath("HBoxContainer2/VBoxContainer2/PositionValueLabel")
-_lblSpeedValue = NodePath("HBoxContainer2/VBoxContainer2/SpeedValueLabel")
-_mainMenu = NodePath("MainMenuBar")
-settingsMenu = NodePath("MainMenuBar/SettingsMenu")
-helpMenu = NodePath("MainMenuBar/Help")
+_grid = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/CoordinateGrid")
+_positionInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PositionContainer/PositionInput")
+_moveButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PositionContainer/MoveButton")
+_stopButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PositionContainer/StopButton")
+_burner = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/Burner")
+_speedSlider = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/SpeedContainer/SpeedSlider")
+_speedInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/SpeedContainer/SpeedInputHandler")
+_lblPositionValue = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/PositionValueLabel")
+_lblSpeedValue = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/SpeedValueLabel")
+_mainMenu = NodePath("MainVerticalLayout/MainMenuBar")
+settingsMenu = NodePath("MainVerticalLayout/MainMenuBar/SettingsMenu")
+helpMenu = NodePath("MainVerticalLayout/MainMenuBar/Help")
 _aboutWindowScene = ExtResource("2_20pc6")
 _portWindowScene = ExtResource("3_5vvyt")
-_startSequenceButton = NodePath("HBoxContainer/VBoxContainer3/StartSequenceButton")
-_cyclesInput = NodePath("HBoxContainer/VBoxContainer3/CyclesSpinBox")
-_statusLabel = NodePath("HBoxContainer/VBoxContainer3/StatusLabel")
-_emergencyStopButton = NodePath("HBoxContainer/EmergencyStopButton")
-_pauseInput = NodePath("HBoxContainer/VBoxContainer4/PauseInput")
-_pauseButton = NodePath("HBoxContainer/VBoxContainer4/PauseButton")
-_savePoint0Button = NodePath("HBoxContainer/VBoxContainer2/Point0Button")
-_savePoint1Button = NodePath("HBoxContainer/VBoxContainer2/Point1Button")
-_savePoint2Button = NodePath("HBoxContainer/VBoxContainer2/Point2Button")
-_point0Label = NodePath("HBoxContainer/VBoxContainer/Point0")
-_point1Label = NodePath("HBoxContainer/VBoxContainer/Point1")
-_point2Label = NodePath("HBoxContainer/VBoxContainer/Point2")
+_startSequenceButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/StartSequenceButton")
+_cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/CyclesSpinBox")
+_statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/StatusLabel")
+_emergencyStopButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/EmergencyStopButton")
+_pauseInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseInput")
+_pauseButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseButton")
+_savePoint0Button = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer2/Point0Button")
+_savePoint1Button = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer2/Point1Button")
+_savePoint2Button = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer2/Point2Button")
+_point0Label = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer/Point0")
+_point1Label = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer/Point1")
+_point2Label = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer/Point2")
+_scriptInput = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptInput")
+_runScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button")
+_stopScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button2")
+_interpreter = NodePath("ScriptInterpreter")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 metadata/_edit_use_anchors_ = true
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="UIController"]
-layout_mode = 0
-offset_left = 49.0
-offset_top = 172.0
-offset_right = 89.0
-offset_bottom = 212.0
+[node name="MainVerticalLayout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UIController/HBoxContainer2"]
+[node name="MainMenuBar" type="MenuBar" parent="MainVerticalLayout"]
+custom_minimum_size = Vector2(1280, 30)
 layout_mode = 2
-
-[node name="Label" type="Label" parent="UIController/HBoxContainer2/VBoxContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "Позиция:"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label2" type="Label" parent="UIController/HBoxContainer2/VBoxContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "Скорость:"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="VBoxContainer2" type="VBoxContainer" parent="UIController/HBoxContainer2"]
-layout_mode = 2
-
-[node name="PositionValueLabel" type="Label" parent="UIController/HBoxContainer2/VBoxContainer2"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "0 мм"
-horizontal_alignment = 1
-vertical_alignment = 1
 metadata/_edit_use_anchors_ = true
 
-[node name="SpeedValueLabel" type="Label" parent="UIController/HBoxContainer2/VBoxContainer2"]
+[node name="SettingsMenu" type="PopupMenu" parent="MainVerticalLayout/MainMenuBar"]
+title = "Настройки"
+item_count = 1
+item_0/text = "Деталь"
+item_0/id = 0
+
+[node name="AboutMenu" type="PopupMenu" parent="MainVerticalLayout/MainMenuBar"]
+title = "О программе"
+size = Vector2i(105, 100)
+item_count = 1
+item_0/text = "Версия 1.0"
+item_0/id = 0
+
+[node name="Help" type="PopupMenu" parent="MainVerticalLayout/MainMenuBar"]
+
+[node name="ColumnsLayout" type="HBoxContainer" parent="MainVerticalLayout"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "0 мм"
-horizontal_alignment = 1
-vertical_alignment = 1
+size_flags_vertical = 3
+
+[node name="LeftPanel" type="PanelContainer" parent="MainVerticalLayout/ColumnsLayout"]
+layout_mode = 2
+
+[node name="LeftVBox" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel"]
+layout_mode = 2
+
+[node name="Label_Settings" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
+layout_mode = 2
+text = "Настройки"
+
+[node name="SpeedContainer" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
+layout_mode = 2
 metadata/_edit_use_anchors_ = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UIController"]
-layout_mode = 0
-offset_left = 268.0
-offset_top = 31.0
-offset_right = 568.0
-offset_bottom = 115.0
-metadata/_edit_use_anchors_ = true
-
-[node name="SpeedInputHandler" type="LineEdit" parent="UIController/VBoxContainer"]
+[node name="SpeedInputHandler" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/SpeedContainer"]
 layout_mode = 2
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
@@ -116,7 +115,7 @@ alignment = 1
 script = ExtResource("6_j4qnp")
 MaxSpeed = 500.0
 
-[node name="SpeedSlider" type="HSlider" parent="UIController/VBoxContainer"]
+[node name="SpeedSlider" type="HSlider" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/SpeedContainer"]
 custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 focus_mode = 0
@@ -124,134 +123,85 @@ min_value = 1.0
 max_value = 500.0
 value = 100.0
 
-[node name="MainMenuBar" type="MenuBar" parent="UIController"]
-custom_minimum_size = Vector2(1280, 30)
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_right = 1240.0
-offset_bottom = 31.0
-grow_horizontal = 2
-metadata/_edit_use_anchors_ = true
+[node name="PositionContainer" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
+layout_mode = 2
 
-[node name="SettingsMenu" type="PopupMenu" parent="UIController/MainMenuBar"]
-title = "Настройки"
-item_count = 1
-item_0/text = "Деталь"
-item_0/id = 0
-
-[node name="AboutMenu" type="PopupMenu" parent="UIController/MainMenuBar"]
-title = "О программе"
-size = Vector2i(105, 100)
-item_count = 1
-item_0/text = "Версия 1.0"
-item_0/id = 0
-
-[node name="Help" type="PopupMenu" parent="UIController/MainMenuBar"]
-
-[node name="LineEdit" type="LineEdit" parent="UIController"]
-layout_mode = 0
-offset_left = 670.0
-offset_top = 40.0
-offset_right = 738.563
-offset_bottom = 71.0
+[node name="PositionInput" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PositionContainer"]
+layout_mode = 2
 focus_mode = 1
-placeholder_text = "X"
+placeholder_text = "X;Y"
 alignment = 1
 
-[node name="Button" type="Button" parent="UIController/LineEdit"]
-layout_mode = 0
-offset_left = 69.0
-offset_right = 184.0
-offset_bottom = 31.0
+[node name="MoveButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PositionContainer"]
+layout_mode = 2
 focus_mode = 1
 text = "Переместить"
 
-[node name="Button2" type="Button" parent="UIController/LineEdit"]
-layout_mode = 0
-offset_left = 184.0
-offset_right = 231.0
-offset_bottom = 31.0
+[node name="StopButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PositionContainer"]
+layout_mode = 2
 focus_mode = 1
 text = "Стоп"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="UIController"]
-layout_mode = 0
-offset_left = 13.0
-offset_top = 610.0
-offset_right = 217.0
-offset_bottom = 699.0
-
-[node name="VBoxContainer" type="VBoxContainer" parent="UIController/HBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
 layout_mode = 2
-theme_override_constants/separation = 14
 
-[node name="Point0" type="Label" parent="UIController/HBoxContainer/VBoxContainer"]
+[node name="PointsGrid" type="GridContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
+layout_mode = 2
+columns = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer"]
+layout_mode = 2
+
+[node name="Point0" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 0"
 
-[node name="Point1" type="Label" parent="UIController/HBoxContainer/VBoxContainer"]
+[node name="Point1" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 1"
 
-[node name="Point2" type="Label" parent="UIController/HBoxContainer/VBoxContainer"]
+[node name="Point2" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 2"
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="UIController/HBoxContainer"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer"]
 layout_mode = 2
 
-[node name="Point0Button" type="Button" parent="UIController/HBoxContainer/VBoxContainer2"]
+[node name="Point0Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer2"]
 layout_mode = 2
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 0"
 
-[node name="Point1Button" type="Button" parent="UIController/HBoxContainer/VBoxContainer2"]
+[node name="Point1Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer2"]
 layout_mode = 2
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 1"
 
-[node name="Point2Button" type="Button" parent="UIController/HBoxContainer/VBoxContainer2"]
+[node name="Point2Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/HBoxContainer/VBoxContainer2"]
 layout_mode = 2
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 2"
 
-[node name="VBoxContainer3" type="VBoxContainer" parent="UIController/HBoxContainer"]
+[node name="HSeparator2" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
 layout_mode = 2
-theme_override_constants/separation = 6
 
-[node name="CyclesSpinBox" type="SpinBox" parent="UIController/HBoxContainer/VBoxContainer3"]
+[node name="ActionsGroup" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
 layout_mode = 2
-focus_mode = 1
 
-[node name="StatusLabel" type="Label" parent="UIController/HBoxContainer/VBoxContainer3"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "Статус"
-horizontal_alignment = 1
-
-[node name="StartSequenceButton" type="Button" parent="UIController/HBoxContainer/VBoxContainer3"]
+[node name="CyclesSpinBox" type="SpinBox" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
 layout_mode = 2
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "Запуск"
 
-[node name="EmergencyStopButton" type="Button" parent="UIController/HBoxContainer"]
-layout_mode = 2
-focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
-text = "Экстренная остановка"
-
-[node name="VBoxContainer4" type="VBoxContainer" parent="UIController/HBoxContainer"]
-layout_mode = 2
-
-[node name="PauseInput" type="SpinBox" parent="UIController/HBoxContainer/VBoxContainer4"]
+[node name="PauseInput" type="SpinBox" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
 layout_mode = 2
 focus_mode = 1
 min_value = 0.5
@@ -260,71 +210,70 @@ step = 0.5
 value = 3.0
 suffix = "сек"
 
-[node name="PauseButton" type="Button" parent="UIController/HBoxContainer/VBoxContainer4"]
+[node name="StartSequenceButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
+layout_mode = 2
+focus_mode = 1
+theme_override_fonts/font = ExtResource("5_c2ibq")
+text = "Запуск"
+
+[node name="PauseButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
 layout_mode = 2
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Пауза"
 
-[node name="CoordinateGrid" type="Node2D" parent="." node_paths=PackedStringArray("_targetBackground")]
-script = ExtResource("7_fpfj3")
-_targetBackground = NodePath("../BlackPanel")
-_font = ExtResource("5_c2ibq")
+[node name="CenterArea" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="ScriptInterpreter" type="Node" parent="." node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_statusLabel", "_grid", "TargetBurner")]
-script = ExtResource("9_kjvhd")
-_scriptInput = NodePath("../Burner/CodeEdit")
-_runButton = NodePath("../Burner/Button")
-_stopButton = NodePath("../Burner/Button2")
-_statusLabel = NodePath("../Burner/Label")
-_grid = NodePath("../CoordinateGrid")
-TargetBurner = NodePath("../Burner")
+[node name="TopStatusBar" type="PanelContainer" parent="MainVerticalLayout/ColumnsLayout/CenterArea"]
+layout_mode = 2
 
-[node name="Burner" type="Node2D" parent="." node_paths=PackedStringArray("_grid")]
-z_index = 3
-script = ExtResource("8_sc1dx")
-AccelerationTime = 0.3
-DecelerationTime = 0.3
-_grid = NodePath("../CoordinateGrid")
+[node name="InfoHBox" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar"]
+layout_mode = 2
 
-[node name="Label" type="Label" parent="Burner"]
-offset_left = 1014.0
-offset_top = 43.0
-offset_right = 1067.0
-offset_bottom = 66.0
+[node name="PositionValueLabel" type="Label" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_c2ibq")
+text = "0 мм"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="VSeparator" type="VSeparator" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
+layout_mode = 2
+
+[node name="SpeedValueLabel" type="Label" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_c2ibq")
+text = "0 мм"
+horizontal_alignment = 1
+vertical_alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="VSeparator2" type="VSeparator" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Статус"
+horizontal_alignment = 1
 
-[node name="CodeEdit" type="CodeEdit" parent="Burner"]
-offset_left = 1093.0
-offset_top = 145.0
-offset_right = 1277.0
-offset_bottom = 324.0
+[node name="GridFrame" type="PanelContainer" parent="MainVerticalLayout/ColumnsLayout/CenterArea"]
+layout_mode = 2
+size_flags_vertical = 3
 
-[node name="Button" type="Button" parent="Burner"]
-offset_left = 1095.0
-offset_top = 334.0
-offset_right = 1149.0
-offset_bottom = 365.0
-text = "Старт"
+[node name="GridWorkspace" type="Control" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame"]
+clip_contents = true
+layout_mode = 2
 
-[node name="Button2" type="Button" parent="Burner"]
-offset_left = 1159.0
-offset_top = 335.0
-offset_right = 1206.0
-offset_bottom = 366.0
-text = "Стоп"
-
-[node name="BlackPanel" type="ColorRect" parent="."]
+[node name="BlackPanel" type="ColorRect" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace"]
 custom_minimum_size = Vector2(150, 150)
-anchors_preset = -1
-anchor_left = -0.0859375
-anchor_top = 0.0138889
-anchor_right = -0.0859375
-anchor_bottom = 0.0138889
-offset_left = 483.0
-offset_top = 151.0
-offset_right = 1203.0
-offset_bottom = 551.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
@@ -332,3 +281,108 @@ size_flags_vertical = 4
 color = Color(0.0885599, 0.0885599, 0.0885599, 1)
 script = ExtResource("10_5tuhn")
 metadata/_edit_use_anchors_ = true
+
+[node name="CoordinateGrid" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_targetBackground")]
+position = Vector2(-122, -33)
+script = ExtResource("7_fpfj3")
+_targetBackground = NodePath("../BlackPanel")
+_font = ExtResource("5_c2ibq")
+
+[node name="Burner" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_grid")]
+z_index = 3
+position = Vector2(-122, -33)
+script = ExtResource("8_sc1dx")
+AccelerationTime = 0.3
+DecelerationTime = 0.3
+_grid = NodePath("../CoordinateGrid")
+
+[node name="RightPanel" type="PanelContainer" parent="MainVerticalLayout/ColumnsLayout"]
+layout_mode = 2
+
+[node name="RightVBox" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/RightPanel"]
+layout_mode = 2
+
+[node name="Label_Cam" type="Label" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+text = "Камера
+"
+
+[node name="CameraPlaceholder" type="ColorRect" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+custom_minimum_size = Vector2(400, 300)
+layout_mode = 2
+color = Color(0.389287, 0.389287, 0.389287, 1)
+
+[node name="HSeparator" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+
+[node name="Label_Manual" type="Label" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+text = "Ручное управление"
+
+[node name="ArrowPad" type="GridContainer" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+columns = 3
+
+[node name="Btn_Empty1" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+layout_mode = 2
+
+[node name="Btn_Up" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+layout_mode = 2
+
+[node name="Btn_Empty2" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+layout_mode = 2
+
+[node name="Btn_Left" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+layout_mode = 2
+
+[node name="Btn_Down" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+layout_mode = 2
+
+[node name="Btn_Right" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+layout_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+
+[node name="ScriptingGroup" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup"]
+layout_mode = 2
+text = "Статус"
+
+[node name="ScriptInput" type="CodeEdit" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup"]
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScriptButtons" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
+layout_mode = 2
+text = "Старт"
+
+[node name="Button2" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
+layout_mode = 2
+text = "Стоп"
+
+[node name="Spacer" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EmergencyStopButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+layout_mode = 2
+size_flags_vertical = 8
+focus_mode = 1
+theme_override_fonts/font = ExtResource("5_c2ibq")
+text = "Экстренная остановка"
+
+[node name="ScriptInterpreter" type="Node" parent="." node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_statusLabel", "_grid", "TargetBurner")]
+script = ExtResource("9_kjvhd")
+_scriptInput = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptInput")
+_runButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button")
+_stopButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button2")
+_statusLabel = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/Label")
+_grid = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/CoordinateGrid")
+TargetBurner = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/Burner")

@@ -9,6 +9,7 @@ public partial class ScriptInterpreter : Node
 {
     public enum InterpreterState { Idle, Running, Paused, Error }
 
+    // Экспорты для внутренней привязки (если нужно подсветку строк)
     [Export] private CodeEdit _scriptInput;
     [Export] private Button _runButton;
     [Export] private Button _stopButton;
@@ -32,7 +33,7 @@ public partial class ScriptInterpreter : Node
     private int _commandCounter = 0;
     private bool _movementWasPaused;
 
-    // Переменные для циклов (Теперь Vector2!)
+    // Переменные для циклов (Vector2)
     private Vector2 _cyclePointA;
     private Vector2 _cyclePointB;
     private int _cycleCount;
@@ -45,8 +46,8 @@ public partial class ScriptInterpreter : Node
         LocateBurner();
         InitializeCommandHandlers();
 
-        if (_scriptInput != null) _scriptInput.Editable = true;
-        if (_runButton != null) _runButton.Pressed += RunScript;
+        // Если кнопки привязаны локально - подключаем (для совместимости)
+        if (_runButton != null) _runButton.Pressed += () => RunScript(_scriptInput?.Text ?? "");
         if (_stopButton != null) _stopButton.Pressed += StopScript;
     }
 
@@ -65,7 +66,6 @@ public partial class ScriptInterpreter : Node
         {
             GD.PrintErr("ScriptInterpreter: Burner not found!");
             if (_statusLabel != null) _statusLabel.Text = "Ошибка: Горелка не найдена";
-            if (_runButton != null) _runButton.Disabled = true;
         }
     }
 
@@ -190,10 +190,7 @@ public partial class ScriptInterpreter : Node
                 return;
             }
 
-            // Выбираем цель (вектор)
             Vector2 target = (_currentCycleStep % 2 != 0) ? _cyclePointB : _cyclePointA;
-
-            // Формируем команду GO с двумя аргументами (X, Y)
             string moveCmd = $"GO({target.X.ToString(CultureInfo.InvariantCulture)}, {target.Y.ToString(CultureInfo.InvariantCulture)})";
             PushPriorityCommand(moveCmd);
         }
@@ -236,12 +233,9 @@ public partial class ScriptInterpreter : Node
         if (args.Length < 1) throw new ArgumentException("Нет аргумента позиции");
 
         float x = ParseFloat(args[0]);
-        float y = 0; // По умолчанию Y = 0
-
-        // Если есть второй аргумент, читаем Y
+        float y = 0;
         if (args.Length > 1) y = ParseFloat(args[1]);
 
-        // ИЗМЕНЕНИЕ: Передаем Vector2
         TargetBurner?.MoveToPosition(new Vector2(x, y));
 
         _waitingForMovement = true;
@@ -261,8 +255,6 @@ public partial class ScriptInterpreter : Node
     {
         if (args.Length < 3) throw new ArgumentException("Формат: CYCLE(PosA, PosB, Count, [Pause])");
 
-        // Читаем X координаты для цикла (Y пока считаем 0 для простоты линейного цикла)
-        // В будущем можно расширить до CYCLE(Ax, Ay, Bx, By...)
         float xA = ParseFloat(args[0]);
         float xB = ParseFloat(args[1]);
         int count = (int)ParseFloat(args[2]);
@@ -271,7 +263,6 @@ public partial class ScriptInterpreter : Node
 
         if (count <= 0) return;
 
-        // Создаем векторы
         Vector2 vecA = new Vector2(xA, 0);
         Vector2 vecB = new Vector2(xB, 0);
 
@@ -285,8 +276,6 @@ public partial class ScriptInterpreter : Node
         _currentCycleStep = 0;
 
         GD.Print($"Старт цикла: {vecA} <-> {vecB}, {count} раз");
-
-        // Запуск первого шага
         string startCmd = $"GO({vecA.X.ToString(CultureInfo.InvariantCulture)}, {vecA.Y.ToString(CultureInfo.InvariantCulture)})";
         PushPriorityCommand(startCmd);
     }
@@ -301,30 +290,24 @@ public partial class ScriptInterpreter : Node
         ClearHighlighting();
     }
 
-    // --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
+    // --- ПУБЛИЧНЫЕ МЕТОДЫ УПРАВЛЕНИЯ ---
 
-    private float ParseFloat(string input)
-    {
-        input = input.Replace(',', '.');
-        if (float.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
-            return result;
-        throw new FormatException($"Неверный формат числа: '{input}'");
-    }
-
-    private void RunScript()
+    // ИСПРАВЛЕНО: Стал public и принимает строку
+    public void RunScript(string scriptText)
     {
         if (_state == InterpreterState.Running) return;
-        if (_scriptInput == null) return;
+        if (string.IsNullOrEmpty(scriptText)) return;
 
         ClearHighlighting();
-        ParseScriptText(_scriptInput.Text);
+        ParseScriptText(scriptText);
 
         _state = InterpreterState.Running;
         ToggleButtons(true);
         if (_statusLabel != null) _statusLabel.Text = "Запуск...";
     }
 
-    private void StopScript()
+    // ИСПРАВЛЕНО: Стал public
+    public void StopScript()
     {
         if (_state == InterpreterState.Running)
         {
@@ -346,6 +329,16 @@ public partial class ScriptInterpreter : Node
                 _movementWasPaused = false;
             }
         }
+    }
+
+    // --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
+
+    private float ParseFloat(string input)
+    {
+        input = input.Replace(',', '.');
+        if (float.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
+            return result;
+        throw new FormatException($"Неверный формат числа: '{input}'");
     }
 
     private void ParseScriptText(string script)
@@ -371,7 +364,6 @@ public partial class ScriptInterpreter : Node
     private void UpdateGridPoints(Vector2 a, Vector2 b)
     {
         if (_grid == null) return;
-        // Передаем массив векторов
         Vector2[] pts = { a, b, Vector2.Zero };
         Color[] cols = { Colors.Yellow, Colors.Orange, Colors.Transparent };
         _grid.UpdatePoints(pts, cols);
@@ -386,6 +378,8 @@ public partial class ScriptInterpreter : Node
     private void HighlightCurrentLine(int lineIndex)
     {
         if (_scriptInput == null) return;
+
+        // Сброс старой подсветки
         if (_lastHighlightedLine >= 0 && _lastHighlightedLine < _scriptInput.GetLineCount())
             _scriptInput.SetLineBackgroundColor(_lastHighlightedLine, new Color(0, 0, 0, 0));
 

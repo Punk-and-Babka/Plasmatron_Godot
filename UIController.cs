@@ -48,6 +48,12 @@ public partial class UIController : Control
     [Export] private Label _point1Label;
     [Export] private Label _point2Label;
     [Export] private Color[] _pointColors = { Colors.Green, Colors.Red, Colors.Blue };
+
+    [ExportGroup("Скриптинг")]
+    [Export] private CodeEdit _scriptInput;      // Окно ввода кода
+    [Export] private Button _runScriptButton;    // Кнопка Старт (скрипта)
+    [Export] private Button _stopScriptButton;   // Кнопка Стоп (скрипта)
+    [Export] private ScriptInterpreter _interpreter; // Ссылка на узел логики
     #endregion
 
     private SerialPort _serialPort;
@@ -147,6 +153,13 @@ public partial class UIController : Control
 
         _pauseInput.ValueChanged += OnPauseChanged;
         _pauseButton.Pressed += OnPauseButtonPressed;
+
+        // Подключаем кнопки скриптов
+        if (_runScriptButton != null)
+            _runScriptButton.Pressed += OnRunScriptPressed;
+
+        if (_stopScriptButton != null)
+            _stopScriptButton.Pressed += OnStopScriptPressed;
     }
 
     public override void _Process(double delta)
@@ -320,6 +333,30 @@ public partial class UIController : Control
 
     #region Movement & Commands
 
+    private void OnRunScriptPressed()
+    {
+        if (_interpreter == null)
+        {
+            ShowError("Интерпретатор не привязан!");
+            return;
+        }
+
+        if (_scriptInput == null || string.IsNullOrWhiteSpace(_scriptInput.Text))
+        {
+            ShowError("Введите код скрипта.");
+            return;
+        }
+
+        // Запускаем текст из окна CodeEdit
+        _interpreter.RunScript(_scriptInput.Text);
+        UpdateStatus("Выполнение скрипта...");
+    }
+
+    private void OnStopScriptPressed()
+    {
+        _interpreter?.StopScript();
+        UpdateStatus("Скрипт остановлен.");
+    }
     public void SendCommand(string command)
     {
         if (_portWindow?.UseMockPort != true && _serialPort?.IsOpen == true)
