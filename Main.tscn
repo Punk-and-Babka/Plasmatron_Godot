@@ -282,18 +282,12 @@ color = Color(0.0885599, 0.0885599, 0.0885599, 1)
 script = ExtResource("10_5tuhn")
 metadata/_edit_use_anchors_ = true
 
-[node name="CoordinateGrid" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_targetBackground")]
-position = Vector2(-122, -33)
+[node name="CoordinateGrid" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace"]
 script = ExtResource("7_fpfj3")
-_targetBackground = NodePath("../BlackPanel")
-_font = ExtResource("5_c2ibq")
 
 [node name="Burner" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_grid")]
 z_index = 3
-position = Vector2(-122, -33)
 script = ExtResource("8_sc1dx")
-AccelerationTime = 0.3
-DecelerationTime = 0.3
 _grid = NodePath("../CoordinateGrid")
 
 [node name="RightPanel" type="PanelContainer" parent="MainVerticalLayout/ColumnsLayout"]
