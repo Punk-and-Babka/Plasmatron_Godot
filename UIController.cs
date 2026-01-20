@@ -648,18 +648,32 @@ public partial class UIController : Control
     }
     public override void _Input(InputEvent @event)
     {
-        // Если нажали ESCAPE или ENTER
-        if (@event.IsActionPressed("ui_cancel") || @event.IsActionPressed("ui_accept"))
+        // 1. ESCAPE (ui_cancel) - Всегда сбрасывает фокус
+        if (@event.IsActionPressed("ui_cancel"))
         {
-            // Находим, у кого сейчас фокус
             Control focused = GetViewport().GuiGetFocusOwner();
-
-            // Если фокус у текстового поля - забираем его
-            if (focused is LineEdit || focused is CodeEdit || focused is TextEdit)
+            if (focused != null)
             {
                 focused.ReleaseFocus();
-                // Теперь фокус стал null, и горелка снова поедет
+                // Можно добавить лог для проверки
+                // GD.Print("Фокус сброшен через ESC"); 
             }
+            return; // Выходим, чтобы не обрабатывать дальше
+        }
+
+        // 2. ENTER (ui_accept) - "Умный" сброс
+        if (@event.IsActionPressed("ui_accept"))
+        {
+            Control focused = GetViewport().GuiGetFocusOwner();
+
+            // Если мы вводим цифры (LineEdit) - Enter подтверждает ввод и снимает фокус
+            if (focused is LineEdit)
+            {
+                focused.ReleaseFocus();
+            }
+
+            // ВАЖНО: Если это CodeEdit (скрипты) или TextEdit - мы НИЧЕГО не делаем.
+            // Enter просто сработает как перенос строки внутри текстового поля.
         }
     }
 
