@@ -1,4 +1,6 @@
-[gd_resource type="Theme" load_steps=2 format=3 uid="uid://6ev0iiyyr54k"]
+[gd_resource type="Theme" load_steps=3 format=3 uid="uid://6ev0iiyyr54k"]
+
+[ext_resource type="FontFile" uid="uid://1el8nihyng7" path="res://fonts/JetBrainsMono-Medium.ttf" id="1_85tfl"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nsng5"]
 content_margin_left = 10.0
@@ -17,4 +19,5 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
 [resource]
+default_font = ExtResource("1_85tfl")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_nsng5")

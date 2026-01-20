@@ -9,6 +9,10 @@ public partial class CoordinateGrid : Node2D
     [Export] private Control _targetBackground;
     // endregion
 
+    [ExportGroup("Настройки Шрифта")]
+    [Export] public Font LabelFont { get; set; } // <--- Сюда перетащить шрифт в Инспекторе
+    [Export] public int FontSize { get; set; } = 24; // Размер шрифта вынесли в переменную
+
     [ExportGroup("Реальные размеры (мм)")]
     [Export] public float RealWorldWidthMM { get; set; } = 1600f;
     [Export] public float RealWorldHeightMM { get; set; } = 900f;
@@ -19,7 +23,8 @@ public partial class CoordinateGrid : Node2D
 
     private List<Vector2> _points = new List<Vector2>();
     private List<Color> _pointColors = new List<Color>();
-    private FontFile _font;
+
+    // FontFile больше не нужен, используем LabelFont
 
     public Rect2 GridArea => GetCurrentArea();
 
@@ -48,7 +53,8 @@ public partial class CoordinateGrid : Node2D
             _targetBackground.Resized += QueueRedraw;
         }
 
-        try { _font = GD.Load<FontFile>("res://fonts/times.ttf"); } catch { }
+        // Мы убрали загрузку "times.ttf".
+        // Теперь шрифт берется из LabelFont.
 
         CallDeferred(CanvasItem.MethodName.QueueRedraw);
     }
@@ -80,16 +86,18 @@ public partial class CoordinateGrid : Node2D
         Rect2 area = GridArea;
         if (area.Size.X < 10 || area.Size.Y < 10) return;
 
-        DrawGridLines(area);
-        DrawPointMarkers(area);
+        // Определяем шрифт: Если в Инспекторе пусто, берем дефолтный шрифт движка
+        Font fontToUse = LabelFont ?? ThemeDB.FallbackFont;
+
+        DrawGridLines(area, fontToUse);
+        DrawPointMarkers(area, fontToUse);
     }
 
-    private void DrawGridLines(Rect2 area)
+    private void DrawGridLines(Rect2 area, Font font)
     {
         float scaleX = PixelsPerMM_X;
         float scaleY = PixelsPerMM_Y;
 
-        // Вертикальные
         for (float mm = 0; mm <= RealWorldWidthMM; mm += 50)
         {
             bool major = Mathf.IsEqualApprox(mm % 100, 0);
@@ -99,12 +107,10 @@ public partial class CoordinateGrid : Node2D
             DrawLine(new Vector2(x, area.Position.Y), new Vector2(x, area.End.Y),
                 major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            // ИЗМЕНЕНИЕ: Добавлено условие 'mm > 0', чтобы не рисовать 0 в начале
-            if (major && _font != null && mm > 0)
-                DrawString(_font, new Vector2(x + 2, area.End.Y - 5), $"{mm:F0}", fontSize: 16);
+            if (major && mm > 0)
+                DrawString(font, new Vector2(x + 2, area.End.Y - 5), $"{mm:F0}", fontSize: 16); // Тут шрифт поменьше для сетки
         }
 
-        // Горизонтальные
         for (float mm = 0; mm <= RealWorldHeightMM; mm += 50)
         {
             bool major = Mathf.IsEqualApprox(mm % 100, 0);
@@ -115,13 +121,12 @@ public partial class CoordinateGrid : Node2D
             DrawLine(new Vector2(area.Position.X, y), new Vector2(area.End.X, y),
                 major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            // ИЗМЕНЕНИЕ: Добавлено условие 'invertedMM > 0', чтобы не рисовать 0 внизу
-            if (major && _font != null && invertedMM > 0)
-                DrawString(_font, new Vector2(area.Position.X + 5, y - 2), $"{invertedMM:F0}", fontSize: 16);
+            if (major && invertedMM > 0)
+                DrawString(font, new Vector2(area.Position.X + 5, y - 2), $"{invertedMM:F0}", fontSize: 16);
         }
     }
 
-    private void DrawPointMarkers(Rect2 area)
+    private void DrawPointMarkers(Rect2 area, Font font)
     {
         if (_points == null) return;
         float scaleX = PixelsPerMM_X;
@@ -138,11 +143,11 @@ public partial class CoordinateGrid : Node2D
             DrawLine(new Vector2(area.Position.X, y), new Vector2(area.End.X, y), c, 1);
             DrawCircle(new Vector2(x, y), 4f, c);
 
-            if (_font != null)
+            if (font != null)
             {
                 string label = $"{_points[i].X:0},{_points[i].Y:0}";
-                // ИЗМЕНЕНИЕ: Увеличен шрифт с 16 до 24
-                DrawString(_font, new Vector2(x + 5, y - 5), label, fontSize: 24, modulate: c);
+                // Используем переменную FontSize (по умолчанию 24)
+                DrawString(font, new Vector2(x + 5, y - 5), label, fontSize: FontSize, modulate: c);
             }
         }
     }

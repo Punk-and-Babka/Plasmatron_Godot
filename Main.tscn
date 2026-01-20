@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://cwwl6wahc6xgq"]
+[gd_scene load_steps=12 format=3 uid="uid://cwwl6wahc6xgq"]
 
 [ext_resource type="Theme" uid="uid://6ev0iiyyr54k" path="res://plasma_theme.tres" id="1_20pc6"]
 [ext_resource type="Script" uid="uid://bl5bb782ddrgv" path="res://UIController.cs" id="1_wkp8b"]
@@ -7,6 +7,7 @@
 [ext_resource type="FontFile" uid="uid://dcriwe0rbrl4e" path="res://fonts/times.ttf" id="5_c2ibq"]
 [ext_resource type="Script" uid="uid://cxumsvhahytmn" path="res://SpeedInputHandler.cs" id="6_j4qnp"]
 [ext_resource type="Script" uid="uid://cr7t1fvsdfttu" path="res://CoordinateGrid.cs" id="7_fpfj3"]
+[ext_resource type="FontFile" uid="uid://1el8nihyng7" path="res://fonts/JetBrainsMono-Medium.ttf" id="8_20pc6"]
 [ext_resource type="Script" uid="uid://b28jyihhsrv4g" path="res://Burner.cs" id="8_sc1dx"]
 [ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="9_kjvhd"]
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
@@ -113,7 +114,6 @@ metadata/_edit_use_anchors_ = true
 [node name="SpeedInputHandler" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/SpeedContainer"]
 layout_mode = 2
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Скорость: 100.0 мм/с"
 alignment = 1
 script = ExtResource("6_j4qnp")
@@ -159,7 +159,6 @@ columns = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 0"
 horizontal_alignment = 1
 
@@ -173,14 +172,12 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 0"
 
 [node name="Lbl_Name1" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 1"
 horizontal_alignment = 1
 
@@ -194,14 +191,12 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 1"
 
 [node name="Lbl_Name2" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 2"
 horizontal_alignment = 1
 
@@ -215,7 +210,6 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 2"
 
 [node name="HSeparator2" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
@@ -240,13 +234,11 @@ suffix = "сек"
 [node name="StartSequenceButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
 layout_mode = 2
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Запуск"
 
 [node name="PauseButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
 layout_mode = 2
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Пауза"
 
 [node name="CenterArea" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout"]
@@ -261,7 +253,6 @@ layout_mode = 2
 
 [node name="PositionValueLabel" type="Label" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "0 мм"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -272,7 +263,6 @@ layout_mode = 2
 
 [node name="SpeedValueLabel" type="Label" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "0 мм"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -283,7 +273,6 @@ layout_mode = 2
 
 [node name="StatusLabel" type="Label" parent="MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Статус"
 horizontal_alignment = 1
 
@@ -312,6 +301,7 @@ metadata/_edit_use_anchors_ = true
 [node name="CoordinateGrid" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_targetBackground")]
 script = ExtResource("7_fpfj3")
 _targetBackground = NodePath("../BlackPanel")
+LabelFont = ExtResource("8_20pc6")
 
 [node name="Burner" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_grid")]
 z_index = 3
