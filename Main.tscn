@@ -47,8 +47,8 @@ _btnGetPoint0 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/Po
 _btnGetPoint1 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Btn_Get1")
 _btnGetPoint2 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Btn_Get2")
 _scriptInput = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptInput")
-_runScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button")
-_stopScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button2")
+_runScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/RunButton")
+_stopScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/StopButton")
 _interpreter = NodePath("ScriptInterpreter")
 _btnUp = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Up")
 _btnDown = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Down")
@@ -407,13 +407,18 @@ size_flags_vertical = 3
 [node name="ScriptButtons" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup"]
 layout_mode = 2
 
-[node name="Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
+[node name="RunButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
 layout_mode = 2
 text = "Старт"
 
-[node name="Button2" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
+[node name="StopButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
 layout_mode = 2
 text = "Стоп"
+
+[node name="ResetButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.415686, 0, 1)
+text = "⟲"
 
 [node name="Spacer" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
 layout_mode = 2
@@ -426,11 +431,12 @@ focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Экстренная остановка"
 
-[node name="ScriptInterpreter" type="Node" parent="." node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_statusLabel", "_grid", "TargetBurner")]
+[node name="ScriptInterpreter" type="Node" parent="." node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_resetButton", "_statusLabel", "_grid", "TargetBurner")]
 script = ExtResource("9_kjvhd")
 _scriptInput = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptInput")
-_runButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button")
-_stopButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button2")
+_runButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/RunButton")
+_stopButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/StopButton")
+_resetButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/ResetButton")
 _statusLabel = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/Label")
 _grid = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/CoordinateGrid")
 TargetBurner = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/Burner")

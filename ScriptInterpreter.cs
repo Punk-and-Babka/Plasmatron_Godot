@@ -9,11 +9,14 @@ public partial class ScriptInterpreter : Node
 {
     public enum InterpreterState { Idle, Running, Paused, Error }
 
-    // Экспорты для внутренней привязки (если нужно подсветку строк)
+    [ExportGroup("UI")]
     [Export] private CodeEdit _scriptInput;
     [Export] private Button _runButton;
     [Export] private Button _stopButton;
+    [Export] private Button _resetButton; // Кнопка сброса (рядом со Стоп)
     [Export] private Label _statusLabel;
+
+    [ExportGroup("Objects")]
     [Export] private CoordinateGrid _grid;
     [Export] public Burner TargetBurner { get; set; }
 
@@ -33,7 +36,7 @@ public partial class ScriptInterpreter : Node
     private int _commandCounter = 0;
     private bool _movementWasPaused;
 
-    // Переменные для циклов (Vector2)
+    // Переменные для циклов
     private Vector2 _cyclePointA;
     private Vector2 _cyclePointB;
     private int _cycleCount;
@@ -46,26 +49,131 @@ public partial class ScriptInterpreter : Node
         LocateBurner();
         InitializeCommandHandlers();
 
-        // Если кнопки привязаны локально - подключаем (для совместимости)
         if (_runButton != null) _runButton.Pressed += () => RunScript(_scriptInput?.Text ?? "");
+
+        // Кнопка STOP теперь умеет сбрасывать ошибки
         if (_stopButton != null) _stopButton.Pressed += StopScript;
+
+        // Отдельная кнопка RESET
+        if (_resetButton != null) _resetButton.Pressed += HardReset;
+
+        // Живая отрисовка при редактировании
+        if (_scriptInput != null)
+        {
+            _scriptInput.TextChanged += OnScriptTextChanged;
+            OnScriptTextChanged(); // Первый запуск
+        }
+    }
+
+    // --- МЕТОД ПОЛНОГО СБРОСА ---
+    public void HardReset()
+    {
+        // 1. Очистка данных
+        _commandQueue.Clear();
+        _executionIndexMap.Clear();
+        _isLargeCycle = false;
+        _waitingForMovement = false;
+        _currentDelay = 0;
+
+        // 2. Сброс состояния
+        _state = InterpreterState.Idle;
+
+        // 3. Остановка горелки
+        if (TargetBurner != null)
+        {
+            TargetBurner.StopAutoMovement();
+            TargetBurner.SetManualPause(false);
+        }
+
+        // 4. Сброс UI
+        ToggleButtons(false); // Run=Active, Stop=Disabled
+        ClearHighlighting();
+
+        if (_statusLabel != null)
+        {
+            _statusLabel.Text = "Сброс выполнен";
+            _statusLabel.Modulate = Colors.White; // Возвращаем белый цвет
+        }
+
+        GD.Print("[ScriptInterpreter] Hard Reset performed.");
+    }
+
+    // --- ЛОГИКА ЖИВОГО ПРЕДПРОСМОТРА ---
+    private void OnScriptTextChanged()
+    {
+        // Если скрипт выполняется, не мешаем ему
+        if (_state == InterpreterState.Running) return;
+        if (_scriptInput == null) return;
+        ScanAndDrawVisuals(_scriptInput.Text);
+    }
+
+    private void ScanAndDrawVisuals(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || _grid == null) return;
+
+        var lines = text.Split('\n');
+        bool cycleFound = false;
+
+        // Ищем последнюю команду CYCLE
+        foreach (var line in lines)
+        {
+            string cleanLine = line.Trim().ToUpperInvariant();
+            if (cleanLine.StartsWith("CYCLE"))
+            {
+                try
+                {
+                    var parts = Regex.Split(cleanLine, @"\(|\)|,")
+                        .Select(p => p.Trim())
+                        .Where(p => !string.IsNullOrEmpty(p))
+                        .Skip(1) // Пропускаем слово CYCLE
+                        .ToArray();
+
+                    if (ExtractCycleCoordinates(parts, out Vector2 a, out Vector2 b))
+                    {
+                        UpdateGridPoints(a, b);
+                        cycleFound = true;
+                    }
+                }
+                catch { /* Игнорируем ошибки при наборе текста */ }
+            }
+        }
+
+        // Если циклов нет, убираем точки с экрана
+        if (!cycleFound) UpdateGridPoints(Vector2.Zero, Vector2.Zero);
+    }
+
+    private bool ExtractCycleCoordinates(string[] args, out Vector2 a, out Vector2 b)
+    {
+        a = Vector2.Zero; b = Vector2.Zero;
+        try
+        {
+            // Формат 1: X1, Y1, X2, Y2, Count
+            if (args.Length >= 5)
+            {
+                a = new Vector2(ParseFloat(args[0]), ParseFloat(args[1]));
+                b = new Vector2(ParseFloat(args[2]), ParseFloat(args[3]));
+                return true;
+            }
+            // Формат 2: X1, X2, Count (Y=0)
+            else if (args.Length >= 3)
+            {
+                a = new Vector2(ParseFloat(args[0]), 0);
+                b = new Vector2(ParseFloat(args[1]), 0);
+                return true;
+            }
+        }
+        catch { return false; }
+        return false;
     }
 
     private void LocateBurner()
     {
         if (TargetBurner == null) TargetBurner = GetParent().GetNodeOrNull<Burner>("Burner");
         if (TargetBurner == null) TargetBurner = GetNodeOrNull<Burner>("../Burner");
-
         if (TargetBurner == null)
         {
             var nodes = GetTree().GetNodesInGroup("burners");
             if (nodes.Count > 0 && nodes[0] is Burner burner) TargetBurner = burner;
-        }
-
-        if (TargetBurner == null)
-        {
-            GD.PrintErr("ScriptInterpreter: Burner not found!");
-            if (_statusLabel != null) _statusLabel.Text = "Ошибка: Горелка не найдена";
         }
     }
 
@@ -78,12 +186,7 @@ public partial class ScriptInterpreter : Node
         {
             _currentDelay -= (float)delta;
             if (_statusLabel != null) _statusLabel.Text = $"Пауза: {_currentDelay:F1} сек";
-
-            if (_currentDelay <= 0)
-            {
-                _currentDelay = 0;
-                OnPauseFinished();
-            }
+            if (_currentDelay <= 0) { _currentDelay = 0; OnPauseFinished(); }
             return;
         }
 
@@ -95,35 +198,28 @@ public partial class ScriptInterpreter : Node
 
             if (!isMoving)
             {
-                _waitingForMovement = false;
-                _movementWaitTimer = 0f;
-                OnMovementFinished();
+                _waitingForMovement = false; _movementWaitTimer = 0f; OnMovementFinished();
             }
             else if (_movementWaitTimer <= 0)
             {
-                GD.PrintErr("Таймаут ожидания движения!");
-                _state = InterpreterState.Error;
-                if (_statusLabel != null) _statusLabel.Text = "Ошибка: Таймаут движения";
-                _waitingForMovement = false;
+                HandleRuntimeError("Таймаут ожидания движения!");
                 return;
             }
             return;
         }
 
-        // 3. СЛЕДУЮЩАЯ КОМАНДА
+        // 3. ВЫПОЛНЕНИЕ КОМАНДЫ
         ExecuteNextCommand();
     }
 
     private void ExecuteNextCommand()
     {
-        if (_state == InterpreterState.Paused) return;
+        // Если ошибка или пауза - ничего не делаем, ждем действий пользователя
+        if (_state == InterpreterState.Paused || _state == InterpreterState.Error) return;
 
         if (_commandQueue.Count == 0)
         {
-            _state = InterpreterState.Idle;
-            if (_statusLabel != null) _statusLabel.Text = "Скрипт завершен";
-            ToggleButtons(false);
-            ClearHighlighting();
+            HandleEnd();
             return;
         }
 
@@ -135,11 +231,8 @@ public partial class ScriptInterpreter : Node
             HighlightCurrentLine(originalLineIndex);
         }
 
-        // Парсинг аргументов
         var parts = Regex.Split(commandLine, @"\(|\)|,")
-            .Select(p => p.Trim())
-            .Where(p => !string.IsNullOrEmpty(p))
-            .ToArray();
+            .Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)).ToArray();
 
         if (parts.Length == 0) return;
 
@@ -154,19 +247,31 @@ public partial class ScriptInterpreter : Node
             }
             catch (Exception ex)
             {
-                _state = InterpreterState.Error;
-                if (_statusLabel != null) _statusLabel.Text = $"Ошибка: {ex.Message}";
-                GD.PrintErr($"Ошибка команды '{command}': {ex}");
+                HandleRuntimeError($"Ошибка в '{command}': {ex.Message}");
             }
         }
         else
         {
-            GD.PrintErr($"Неизвестная команда: {command}");
+            HandleRuntimeError($"Неизвестная команда: {command}");
         }
     }
 
-    // --- ЛОГИКА ЦИКЛОВ ---
+    // --- ОБРАБОТКА ОШИБОК ---
+    private void HandleRuntimeError(string msg)
+    {
+        _state = InterpreterState.Error;
+        GD.PrintErr(msg);
 
+        if (_statusLabel != null)
+        {
+            _statusLabel.Text = msg;
+            _statusLabel.Modulate = Colors.Red; // Красный текст ошибки
+        }
+
+        // Кнопки НЕ блокируем полностью, чтобы можно было нажать Stop/Reset
+    }
+
+    // --- ЛОГИКА БОЛЬШОГО ЦИКЛА ---
     private void OnMovementFinished()
     {
         if (_isLargeCycle && _state == InterpreterState.Running)
@@ -185,7 +290,7 @@ public partial class ScriptInterpreter : Node
 
             if (_currentCycleStep >= totalSteps)
             {
-                GD.Print($"Большой цикл завершен ({_cycleCount} итераций)");
+                GD.Print($"Цикл завершен ({_cycleCount} итераций)");
                 _isLargeCycle = false;
                 return;
             }
@@ -206,7 +311,6 @@ public partial class ScriptInterpreter : Node
     }
 
     // --- ОБРАБОТЧИКИ КОМАНД ---
-
     private void InitializeCommandHandlers()
     {
         _commandHandlers = new Dictionary<string, Action<string[]>>(StringComparer.OrdinalIgnoreCase)
@@ -222,7 +326,7 @@ public partial class ScriptInterpreter : Node
 
     private void HandleSpeed(string[] args)
     {
-        if (args.Length < 1) throw new ArgumentException("Нет аргумента скорости");
+        if (args.Length < 1) throw new ArgumentException("Укажите скорость");
         float speed = ParseFloat(args[0]);
         TargetBurner?.SetMovementSpeed(speed);
         if (_statusLabel != null) _statusLabel.Text = $"Скорость: {speed} мм/с";
@@ -230,7 +334,7 @@ public partial class ScriptInterpreter : Node
 
     private void HandleGo(string[] args)
     {
-        if (args.Length < 1) throw new ArgumentException("Нет аргумента позиции");
+        if (args.Length < 1) throw new ArgumentException("Укажите X");
 
         float x = ParseFloat(args[0]);
         float y = 0;
@@ -245,7 +349,7 @@ public partial class ScriptInterpreter : Node
 
     private void HandlePause(string[] args)
     {
-        if (args.Length < 1) throw new ArgumentException("Нет аргумента времени");
+        if (args.Length < 1) throw new ArgumentException("Укажите секунды");
         float seconds = ParseFloat(args[0]);
         _currentDelay = seconds;
         if (_statusLabel != null) _statusLabel.Text = $"Пауза: {seconds} сек";
@@ -253,19 +357,21 @@ public partial class ScriptInterpreter : Node
 
     private void HandleCycle(string[] args)
     {
-        if (args.Length < 3) throw new ArgumentException("Формат: CYCLE(PosA, PosB, Count, [Pause])");
+        if (!ExtractCycleCoordinates(args, out Vector2 vecA, out Vector2 vecB))
+        {
+            throw new ArgumentException("Формат: (X1, X2, Count) или (X1, Y1, X2, Y2, Count)");
+        }
 
-        float xA = ParseFloat(args[0]);
-        float xB = ParseFloat(args[1]);
-        int count = (int)ParseFloat(args[2]);
+        int countIndex = (args.Length >= 5) ? 4 : 2;
+        int pauseIndex = (args.Length >= 5) ? 5 : 3;
+
+        int count = (int)ParseFloat(args[countIndex]);
         float pause = 0.5f;
-        if (args.Length >= 4) pause = ParseFloat(args[3]);
+        if (args.Length > pauseIndex) pause = ParseFloat(args[pauseIndex]);
 
         if (count <= 0) return;
 
-        Vector2 vecA = new Vector2(xA, 0);
-        Vector2 vecB = new Vector2(xB, 0);
-
+        // Рисуем на сетке
         UpdateGridPoints(vecA, vecB);
 
         _cyclePointA = vecA;
@@ -275,7 +381,6 @@ public partial class ScriptInterpreter : Node
         _isLargeCycle = true;
         _currentCycleStep = 0;
 
-        GD.Print($"Старт цикла: {vecA} <-> {vecB}, {count} раз");
         string startCmd = $"GO({vecA.X.ToString(CultureInfo.InvariantCulture)}, {vecA.Y.ToString(CultureInfo.InvariantCulture)})";
         PushPriorityCommand(startCmd);
     }
@@ -285,14 +390,17 @@ public partial class ScriptInterpreter : Node
         _commandQueue.Clear();
         _isLargeCycle = false;
         _state = InterpreterState.Idle;
-        if (_statusLabel != null) _statusLabel.Text = "Выполнено";
+        if (_statusLabel != null)
+        {
+            _statusLabel.Text = "Выполнено";
+            _statusLabel.Modulate = Colors.White;
+        }
         ToggleButtons(false);
         ClearHighlighting();
     }
 
-    // --- ПУБЛИЧНЫЕ МЕТОДЫ УПРАВЛЕНИЯ ---
+    // --- ПУБЛИЧНОЕ УПРАВЛЕНИЕ ---
 
-    // ИСПРАВЛЕНО: Стал public и принимает строку
     public void RunScript(string scriptText)
     {
         if (_state == InterpreterState.Running) return;
@@ -303,12 +411,23 @@ public partial class ScriptInterpreter : Node
 
         _state = InterpreterState.Running;
         ToggleButtons(true);
-        if (_statusLabel != null) _statusLabel.Text = "Запуск...";
+
+        if (_statusLabel != null)
+        {
+            _statusLabel.Text = "Запуск...";
+            _statusLabel.Modulate = Colors.White;
+        }
     }
 
-    // ИСПРАВЛЕНО: Стал public
     public void StopScript()
     {
+        // Аварийный сброс, если мы в ошибке
+        if (_state == InterpreterState.Error)
+        {
+            HardReset();
+            return;
+        }
+
         if (_state == InterpreterState.Running)
         {
             _state = InterpreterState.Paused;
@@ -331,14 +450,14 @@ public partial class ScriptInterpreter : Node
         }
     }
 
-    // --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
+    // --- ВСПОМОГАТЕЛЬНЫЕ ---
 
     private float ParseFloat(string input)
     {
         input = input.Replace(',', '.');
         if (float.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
             return result;
-        throw new FormatException($"Неверный формат числа: '{input}'");
+        throw new FormatException($"Число '{input}' некорректно");
     }
 
     private void ParseScriptText(string script)
@@ -378,8 +497,6 @@ public partial class ScriptInterpreter : Node
     private void HighlightCurrentLine(int lineIndex)
     {
         if (_scriptInput == null) return;
-
-        // Сброс старой подсветки
         if (_lastHighlightedLine >= 0 && _lastHighlightedLine < _scriptInput.GetLineCount())
             _scriptInput.SetLineBackgroundColor(_lastHighlightedLine, new Color(0, 0, 0, 0));
 
