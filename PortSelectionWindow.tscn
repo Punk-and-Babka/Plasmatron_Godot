@@ -1,14 +1,14 @@
 [gd_scene load_steps=3 format=3 uid="uid://blx66uippcuma"]
 
-[ext_resource type="FontFile" uid="uid://dcriwe0rbrl4e" path="res://fonts/times.ttf" id="1_gglla"]
+[ext_resource type="Theme" uid="uid://6ev0iiyyr54k" path="res://plasma_theme.tres" id="1_v27c4"]
 [ext_resource type="Script" uid="uid://dut1oh1tg6p7" path="res://PortSelectionWindow.cs" id="2_v27c4"]
 
 [node name="PortSelectionWindow" type="Window" node_paths=PackedStringArray("_portComboBox", "_baudRateComboBox", "_mockPortCheckButton")]
 title = "Подключение по COM-порту"
 initial_position = 1
-size = Vector2i(338, 91)
+size = Vector2i(385, 91)
 transient = true
-theme_override_fonts/title_font = ExtResource("1_gglla")
+theme = ExtResource("1_v27c4")
 script = ExtResource("2_v27c4")
 _portComboBox = NodePath("HBoxContainer/VBoxContainer/PortComboBox")
 _baudRateComboBox = NodePath("HBoxContainer/VBoxContainer/BaudRateComboBox")
@@ -25,19 +25,16 @@ theme_override_constants/separation = 10
 
 [node name="Label" type="Label" parent="HBoxContainer/VBoxContainer2"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_gglla")
 text = "COM-Порт:"
 horizontal_alignment = 2
 
 [node name="Label2" type="Label" parent="HBoxContainer/VBoxContainer2"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_gglla")
 text = "Baud Rate:"
 horizontal_alignment = 2
 
 [node name="Label3" type="Label" parent="HBoxContainer/VBoxContainer2"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_gglla")
 text = " Виртуальный порт"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
@@ -46,7 +43,6 @@ theme_override_constants/separation = 4
 
 [node name="PortComboBox" type="OptionButton" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_gglla")
 item_count = 1
 popup/item_0/id = 0
 
@@ -54,15 +50,12 @@ popup/item_0/id = 0
 clip_contents = true
 custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_gglla")
 
 [node name="MockPortCheckButton" type="CheckButton" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_gglla")
 
 [node name="ConnectButton" type="Button" parent="HBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_gglla")
 text = "Подключиться"
 icon_alignment = 1
 
