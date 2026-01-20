@@ -437,19 +437,24 @@ public partial class UIController : Control
 
     private void OnMoveButtonPressed()
     {
-        // Используем универсальный парсер для одиночного движения
         Vector2 target = ParsePoint(_positionInput.Text);
 
-        // Если Y не задан (0), можно попробовать использовать текущий Y, 
-        // но ParsePoint вернет 0, если его нет. 
-        // Добавим проверку: если в строке не было разделителя, оставляем Y текущим.
-        if (!_positionInput.Text.Contains(";") && !_positionInput.Text.Contains(","))
+        // Проверка на наличие разделителя (теперь ищем запятую или точку с запятой для совместимости)
+        if (!_positionInput.Text.Contains(",") && !_positionInput.Text.Contains(";"))
         {
             float currentY = _burner != null ? _burner.PositionMM.Y : 0;
             target.Y = currentY;
         }
 
-        _burner?.MoveToPosition(target);
+        if (_burner != null)
+        {
+            _burner.MoveToPosition(target);
+        }
+        else
+        {
+            // Обновили текст ошибки
+            ShowError("Горелка не найдена или неверный формат.\nИспользуйте: 'X, Y' (например: 100, 200)");
+        }
     }
 
     private void OnStopButtonPressed() => _burner?.StopAutoMovement();
@@ -467,7 +472,10 @@ public partial class UIController : Control
     {
         if (_burner == null || targetInput == null) return;
         Vector2 pos = _burner.PositionMM;
-        targetInput.Text = $"{pos.X:F0}; {pos.Y:F0}";
+
+        // БЫЛО: targetInput.Text = $"{pos.X:F0}; {pos.Y:F0}";
+        // СТАЛО: Разделитель - запятая
+        targetInput.Text = $"{pos.X:F0}, {pos.Y:F0}";
 
         UpdateGridVisuals();
     }
@@ -489,14 +497,15 @@ public partial class UIController : Control
     {
         if (string.IsNullOrWhiteSpace(text)) return Vector2.Zero;
 
-        // Удаляем лишнее, разделяем по ; , или пробелу
-        string[] parts = text.Split(new char[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        // Разделяем по: запятой, точке с запятой или пробелу
+        string[] parts = text.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
         float x = 0;
         float y = 0;
 
-        if (parts.Length > 0) float.TryParse(parts[0].Replace('.', ','), NumberStyles.Any, CultureInfo.InvariantCulture, out x);
-        if (parts.Length > 1) float.TryParse(parts[1].Replace('.', ','), NumberStyles.Any, CultureInfo.InvariantCulture, out y);
+        // Важно: CultureInfo.InvariantCulture гарантирует, что точка - это дробь
+        if (parts.Length > 0) float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out x);
+        if (parts.Length > 1) float.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out y);
 
         return new Vector2(x, y);
     }
