@@ -52,7 +52,7 @@ public partial class ScriptInterpreter : Node
         if (_runButton != null) _runButton.Pressed += () => RunScript(_scriptInput?.Text ?? "");
 
         // Кнопка STOP теперь умеет сбрасывать ошибки
-        if (_stopButton != null) _stopButton.Pressed += StopScript;
+        //if (_stopButton != null) _stopButton.Pressed += StopScript;
 
         // Отдельная кнопка RESET
         if (_resetButton != null) _resetButton.Pressed += HardReset;
@@ -456,29 +456,42 @@ public partial class ScriptInterpreter : Node
         }
     }
 
-    public void StopScript()
+    // --- УМНАЯ ПАУЗА / ВОЗОБНОВЛЕНИЕ ---
+    public void TogglePause()
     {
-        // Аварийный сброс, если мы в ошибке
-        if (_state == InterpreterState.Error)
-        {
-            HardReset();
-            return;
-        }
-
+        // 1. Если скрипт выполняется -> СТАВИМ ПАУЗУ
         if (_state == InterpreterState.Running)
         {
             _state = InterpreterState.Paused;
-            if (_statusLabel != null) _statusLabel.Text = "Пауза (Польз.)";
-            if (TargetBurner != null && !TargetBurner.IsManualPaused)
+
+            GD.Print("Скрипт: Пауза");
+            if (_statusLabel != null)
+            {
+                _statusLabel.Text = "ПАУЗА (Нажмите Продолжить)";
+                _statusLabel.Modulate = Colors.Yellow;
+            }
+
+            // Останавливаем физическую горелку
+            if (TargetBurner != null)
             {
                 TargetBurner.SetManualPause(true);
+                // Запоминаем, что мы двигались, чтобы потом продолжить
                 _movementWasPaused = true;
             }
         }
+        // 2. Если скрипт на паузе -> ПРОДОЛЖАЕМ
         else if (_state == InterpreterState.Paused)
         {
             _state = InterpreterState.Running;
-            if (_statusLabel != null) _statusLabel.Text = "Продолжение...";
+
+            GD.Print("Скрипт: Продолжение");
+            if (_statusLabel != null)
+            {
+                _statusLabel.Text = "Выполнение...";
+                _statusLabel.Modulate = Colors.White;
+            }
+
+            // "Размораживаем" горелку
             if (TargetBurner != null && _movementWasPaused)
             {
                 TargetBurner.SetManualPause(false);
@@ -486,6 +499,9 @@ public partial class ScriptInterpreter : Node
             }
         }
     }
+
+    // Для совместимости со старыми вызовами (если где-то остались)
+    public void StopScript() => TogglePause();
 
     // --- ВСПОМОГАТЕЛЬНЫЕ ---
 

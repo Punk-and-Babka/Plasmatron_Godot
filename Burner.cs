@@ -147,10 +147,17 @@ public partial class Burner : Node2D
         HandlePhysics(dt);
     }
 
-    // --- ИСПРАВЛЕННАЯ ФИЗИКА И ВВОД ---
+    // --- ИСПРАВЛЕННАЯ ФИЗИКА И ВВОД (HARD STOP) ---
     private void HandlePhysics(float delta)
     {
-        if (_isManualPaused) return;
+        // 1. ЖЕЛЕЗОБЕТОННАЯ ПАУЗА
+        if (_isManualPaused)
+        {
+            // Если мы на паузе, мы ОБЯЗАНЫ стоять.
+            // Гасим инерцию мгновенно.
+            _currentVelocity = Vector2.Zero;
+            return;
+        }
 
         Vector2 targetVelocity = Vector2.Zero;
         float currentRate = _decelerationRate;
@@ -356,11 +363,29 @@ public partial class Burner : Node2D
         _uiController?.SendCommand("s");
     }
 
+    // --- ИСПРАВЛЕННАЯ ПАУЗА ---
     public void SetManualPause(bool state)
     {
         _isManualPaused = state;
-        if (state) _uiController?.SendCommand("s");
-        else if (IsMovingToTarget) MoveToPosition(TargetPosition);
+
+        if (state)
+        {
+            // ПАУЗА: Мгновенно останавливаем всё
+            _currentVelocity = Vector2.Zero;
+            _uiController?.SendCommand("s"); // Шлем 's' (Stop) на Ардуино
+            GD.Print("Burner: PAUSED (Hard stop)");
+        }
+        else
+        {
+            // ПРОДОЛЖЕНИЕ:
+            // Если мы ехали к цели, нужно снова отправить команду движения,
+            // потому что Ардуино уже забыла про неё после команды 's'.
+            if (IsMovingToTarget)
+            {
+                GD.Print("Burner: RESUMING move to " + TargetPosition);
+                SendMovementCommand(TargetPosition);
+            }
+        }
     }
 
     public void SetMovementSpeed(float speed)

@@ -572,14 +572,41 @@ public partial class UIController : Control
             return;
         }
 
+        // СБРОС КНОПКИ СТОП В ИСХОДНОЕ СОСТОЯНИЕ
+        if (_stopScriptButton != null)
+        {
+            _stopScriptButton.Text = "Пауза";
+            _stopScriptButton.Modulate = Colors.Red;
+            _stopScriptButton.Disabled = false; // Включаем кнопку
+        }
+
         _interpreter.RunScript(_scriptInput.Text);
         UpdateStatus("Выполнение скрипта...");
     }
 
     private void OnStopScriptPressed()
     {
-        _interpreter?.StopScript();
-        UpdateStatus("Скрипт остановлен.");
+        _interpreter?.TogglePause();
+        UpdateScriptButtonsState(); // Обновление текста "Стоп/Продолжить"
+    }
+    private void UpdateScriptButtonsState()
+    {
+        if (_interpreter == null || _stopScriptButton == null) return;
+
+        // Читаем приватное состояние через Reflection или добавьте public свойство IsPaused в Interpreter
+        // Но проще ориентироваться на текст кнопки:
+
+        // Если кнопка называлась "Стоп" или "Пауза" -> Меняем на "Продолжить"
+        if (_stopScriptButton.Text == "Стоп" || _stopScriptButton.Text == "Пауза")
+        {
+            _stopScriptButton.Text = "Продолжить";
+            _stopScriptButton.Modulate = Colors.Green; // Зеленая, чтобы привлечь внимание
+        }
+        else
+        {
+            _stopScriptButton.Text = "Пауза";
+            _stopScriptButton.Modulate = Colors.Red; // Красная (обычное состояние)
+        }
     }
 
     // --- НОВОЕ: Методы сохранения и загрузки ---
