@@ -32,6 +32,7 @@ public partial class UIController : Control
     [Export] private PackedScene _portWindowScene;
     [Export] private PackedScene _calcWindowScene; // Ссылка на сцену калькулятора
     [Export] private PackedScene _pieceWindowScene;
+    [Export] private PackedScene _accelWindowScene;
 
 
     [ExportGroup("Управление")]
@@ -74,6 +75,7 @@ public partial class UIController : Control
     private PortSelectionWindow _portWindow;
     private CalculationWindow _calcWindowInstance;
     private PieceWindow _pieceWindowInstance;
+    private AccelerationWindow _accelWindowInstance;
 
     private Vector2 _lastPosition;
     private float _lastSpeed;
@@ -317,7 +319,7 @@ public partial class UIController : Control
         {
             case 0: ShowPortSelectionWindow(); break;
             case 1: ShowCalculator(); break;
-            case 2: GD.Print("TODO: Accel"); break;
+            case 2: ShowAccelWindow(); break;
             case 3: ShowPieceWindow(); break; 
         }
     }
@@ -379,7 +381,44 @@ public partial class UIController : Control
             _portWindow.PopupCentered();
         }
     }
+    // --- НАСТРОЙКИ УСКОРЕНИЯ ---
+    private void ShowAccelWindow()
+    {
+        // 1. Создаем, если нет
+        if (_accelWindowInstance == null || !GodotObject.IsInstanceValid(_accelWindowInstance))
+        {
+            if (_accelWindowScene == null)
+            {
+                ShowError("Сцена окна ускорения не назначена!");
+                return;
+            }
+            _accelWindowInstance = _accelWindowScene.Instantiate<AccelerationWindow>();
+            AddChild(_accelWindowInstance);
+            _accelWindowInstance.AccelerationSettingsApplied += OnAccelSettingsApplied;
+        }
 
+        // 2. Обязательно подгружаем текущие значения из горелки, чтобы оператор видел, что сейчас стоит
+        if (_burner != null)
+        {
+            _accelWindowInstance.InitValues(_burner.AccelerationTime, _burner.DecelerationTime);
+        }
+
+        _accelWindowInstance.PopupCentered();
+    }
+
+    private void OnAccelSettingsApplied(float accel, float decel)
+    {
+        if (_burner != null)
+        {
+            _burner.UpdateAccelerationParameters(accel, decel);
+            GD.Print($"[UI] Новые параметры динамики: {accel} / {decel}");
+        }
+        else
+        {
+            ShowError("Горелка не найдена, параметры не применены.");
+        }
+    }
+    // ----------------------------
     private void ShowAboutWindow()
     {
         if (_aboutWindowScene != null)

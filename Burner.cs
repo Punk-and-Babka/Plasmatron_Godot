@@ -65,8 +65,8 @@ public partial class Burner : Node2D
 
     [ExportGroup("Движение")]
     [Export] public float MaxSpeedMM { get; set; } = 100f;
-    [Export] public float AccelerationTime = 0.25f;
-    [Export] public float DecelerationTime = 0.25f;
+    [Export] public float AccelerationTime { get; set; } = 0.25f; // Сделал свойством для доступа извне
+    [Export] public float DecelerationTime { get; set; } = 0.25f;
 
     [ExportGroup("Связи")]
     [Export] private CoordinateGrid _grid;
@@ -89,9 +89,6 @@ public partial class Burner : Node2D
         get => _positionMM;
         private set
         {
-            // Здесь мы не ограничиваем MaxPositionMM жестко для позиции,
-            // чтобы логика не ломалась, если горелка выедет чуть за край.
-            // Но clamp полезен для безопасности.
             float x = Mathf.Clamp(value.X, 0, _grid?.RealWorldWidthMM ?? 1000);
             float y = Mathf.Clamp(value.Y, 0, _grid?.RealWorldHeightMM ?? 1000);
             Vector2 clamped = new Vector2(x, y);
@@ -118,11 +115,22 @@ public partial class Burner : Node2D
         if (_speedSlider != null) ConnectSlider();
     }
 
+    // --- ОБНОВЛЕННЫЙ МЕТОД РАСЧЕТА ФИЗИКИ ---
+    // Теперь вызывается и при смене времени разгона (из окна настроек)
     private void CalculatePhysicsRates()
     {
         _accelerationRate = AccelerationTime > 0 ? MaxSpeedMM / AccelerationTime : MaxSpeedMM * 10;
         _decelerationRate = DecelerationTime > 0 ? MaxSpeedMM / DecelerationTime : MaxSpeedMM * 10;
     }
+
+    // Метод для вызова из окна настроек ускорения
+    public void UpdateAccelerationParameters(float accelTime, float decelTime)
+    {
+        AccelerationTime = Mathf.Max(0.01f, accelTime);
+        DecelerationTime = Mathf.Max(0.01f, decelTime);
+        CalculatePhysicsRates();
+    }
+    // ----------------------------------------
 
     public override void _Process(double delta)
     {
@@ -139,7 +147,7 @@ public partial class Burner : Node2D
         HandlePhysics(dt);
     }
 
-    // --- ФИЗИКА И ВВОД ---
+    // --- ИСПРАВЛЕННАЯ ФИЗИКА И ВВОД ---
     private void HandlePhysics(float delta)
     {
         if (_isManualPaused) return;
@@ -170,25 +178,23 @@ public partial class Burner : Node2D
         // 2. РУЧНОЕ УПРАВЛЕНИЕ
         else if (!IsAutoSequenceActive)
         {
-            // --- ЗАЩИТА ОТ ВВОДА ПРИ НАБОРЕ ТЕКСТА ---
             Vector2 keyboardInput = Vector2.Zero;
 
-            // Получаем элемент, на котором сейчас фокус
+            // --- ЗАЩИТА: Получаем элемент в фокусе ---
             Control focusedControl = GetViewport().GuiGetFocusOwner();
 
-            // Проверяем: если фокус НЕ на текстовом поле, то разрешаем читать клавиатуру
+            // Читаем клавиатуру, ТОЛЬКО если фокус НЕ на текстовом поле
             if (!(focusedControl is CodeEdit || focusedControl is LineEdit || focusedControl is TextEdit))
             {
                 float keyX = Input.GetAxis("Burner_left", "Burner_right");
                 float keyY = Input.GetAxis("Burner_down", "Burner_up");
                 keyboardInput = new Vector2(keyX, keyY);
             }
-            // ------------------------------------------
+            // ----------------------------------------
 
-            // 2. Суммируем с экранными кнопками (они должны работать всегда)
+            // Суммируем с экранными кнопками
             Vector2 combinedInput = keyboardInput + InterfaceInputVector;
 
-            // Ограничиваем длину вектора единицей
             if (combinedInput.Length() > 1) combinedInput = combinedInput.Normalized();
 
             Vector2 inputDir = combinedInput;
@@ -198,7 +204,7 @@ public partial class Burner : Node2D
                 targetVelocity = inputDir * MaxSpeedMM;
                 currentRate = _accelerationRate;
 
-                // Отправляем команду, если начали двигаться (порог > 1.0f)
+                // Отправляем команду
                 if (_currentVelocity.Length() > 1.0f)
                 {
                     SendMovementCommand(PositionMM + inputDir * 100f);
@@ -218,7 +224,6 @@ public partial class Burner : Node2D
     // --- УПРАВЛЕНИЕ ---
     public void MoveToPosition(Vector2 target)
     {
-        // Разрешаем ехать в любую точку в пределах сетки
         float x = Mathf.Clamp(target.X, 0, _grid?.RealWorldWidthMM ?? 1000);
         float y = Mathf.Clamp(target.Y, 0, _grid?.RealWorldHeightMM ?? 1000);
         TargetPosition = new Vector2(x, y);
@@ -244,6 +249,9 @@ public partial class Burner : Node2D
     private void SendMovementCommand(Vector2 target)
     {
         if (_uiController == null) return;
+
+        // Тут мы отправляем G-Code, если перешли на него, или старый формат.
+        // Пока оставляю твой старый формат для совместимости, но готовься менять на G-Code.
         Vector2 diff = target - PositionMM;
         string cmd = "";
         if (Mathf.Abs(diff.X) > Mathf.Abs(diff.Y)) cmd = diff.X > 0 ? "f" : "b";
@@ -359,7 +367,7 @@ public partial class Burner : Node2D
     {
         if (Mathf.IsEqualApprox(MaxSpeedMM, speed)) return;
         MaxSpeedMM = speed;
-        CalculatePhysicsRates();
+        CalculatePhysicsRates(); // Пересчитываем ускорения при смене скорости
         SpeedChanged?.Invoke(MaxSpeedMM);
         _uiController?.SendSpeedCommand(MaxSpeedMM);
         _uiController?.UpdateSpeedSlider(MaxSpeedMM);
@@ -383,13 +391,10 @@ public partial class Burner : Node2D
     {
         if (_grid?.GridArea.Size == Vector2.Zero) return;
 
-        // --- 1. ВЫЧИСЛЕНИЯ КООРДИНАТ ---
-        // Точка координат (ИСТИНА)
         float tipX = _grid.GridArea.Position.X + (PositionMM.X * _grid.PixelsPerMM_X);
         float tipY = _grid.GridArea.Position.Y + (_grid.RealWorldHeightMM - PositionMM.Y) * _grid.PixelsPerMM_Y;
         Vector2 tipScreenPos = new Vector2(tipX, tipY);
 
-        // Размеры и положение корпуса
         Vector2 bodySizePx = new Vector2(RealWidthMM * _grid.PixelsPerMM_X, RealHeightMM * _grid.PixelsPerMM_Y);
         Vector2 offsetPx = new Vector2(VisualOffsetMM.X * _grid.PixelsPerMM_X, -VisualOffsetMM.Y * _grid.PixelsPerMM_Y);
 
@@ -399,36 +404,26 @@ public partial class Burner : Node2D
         );
         Rect2 bodyRect = new Rect2(bodyTopLeft, bodySizePx);
 
-
-        // --- 2. ОТРИСОВКА СЛОЕВ (СНИЗУ ВВЕРХ) ---
-
-        // СЛОЙ 1 (Самый нижний): Механическое крепление (серая линия)
-        // Рисуем от центра корпуса к точке.
+        // СЛОЙ 1: Линия крепления
         DrawLine(bodyRect.GetCenter(), tipScreenPos, Colors.Gray, 2f);
 
-        // СЛОЙ 2 (Средний): КАРЕТКА (Корпус)
-        DrawRect(bodyRect, BodyColor, true); // Темная заливка
-        DrawRect(bodyRect, new Color(0.5f, 0.5f, 0.5f), false, 1); // Тонкая рамка
+        // СЛОЙ 2: Корпус
+        DrawRect(bodyRect, BodyColor, true);
+        DrawRect(bodyRect, new Color(0.5f, 0.5f, 0.5f), false, 1);
 
-        // СЛОЙ 3 (Верхний): МИШЕНЬ (Лазерный прицел) - Циан
-        // Мы перенесли этот блок вниз, чтобы он рисовался ПОВЕРХ корпуса.
-
-        // Увеличили размер с 15f до 30f (можно настроить под себя)
+        // СЛОЙ 3: Прицел (Крест) - Увеличен размер
         float crossSize = 30f;
-        // Рисуем длинные тонкие линии
         DrawLine(tipScreenPos - new Vector2(crossSize, 0), tipScreenPos + new Vector2(crossSize, 0), TargetPointColor, 1f);
         DrawLine(tipScreenPos - new Vector2(0, crossSize), tipScreenPos + new Vector2(0, crossSize), TargetPointColor, 1f);
 
-        // СЛОЙ 4 (Самый верхний): ИНДИКАЦИЯ РАБОТЫ (Точка в центре)
+        // СЛОЙ 4: Активность
         if (IsAutoSequenceActive || (IsMovingToTarget && CurrentSpeedScalar > 10))
         {
-            // Красная точка (плазма) + свечение
-            DrawCircle(tipScreenPos, 8f, new Color(1, 0, 0, 0.3f)); // Ореол
-            DrawCircle(tipScreenPos, 4f, new Color(1, 0.2f, 0.2f, 1f)); // Ядро
+            DrawCircle(tipScreenPos, 8f, new Color(1, 0, 0, 0.3f));
+            DrawCircle(tipScreenPos, 4f, new Color(1, 0.2f, 0.2f, 1f));
         }
         else
         {
-            // В покое - маленькая точка цвета прицела в самом центре перекрестия
             DrawCircle(tipScreenPos, 3f, TargetPointColor);
         }
     }
