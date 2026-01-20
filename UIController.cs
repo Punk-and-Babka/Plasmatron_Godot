@@ -34,6 +34,7 @@ public partial class UIController : Control
     [Export] private PackedScene _calcWindowScene; // Ссылка на сцену калькулятора
     [Export] private PackedScene _pieceWindowScene;
     [Export] private PackedScene _accelWindowScene;
+    [Export] private PackedScene _scriptHelpScene;
 
 
     [ExportGroup("Управление")]
@@ -81,6 +82,7 @@ public partial class UIController : Control
     private CalculationWindow _calcWindowInstance;
     private PieceWindow _pieceWindowInstance;
     private AccelerationWindow _accelWindowInstance;
+    private ScriptHelp _scriptHelpInstance;
 
     private Vector2 _lastPosition;
     private float _lastSpeed;
@@ -366,9 +368,35 @@ public partial class UIController : Control
     {
         switch (id)
         {
-            case 0: GD.Print("TODO: Help"); break;
-            case 1: ShowAboutWindow(); break;
+            case 0:
+                ShowScriptHelp(); // Новое имя метода
+                break;
+            case 1:
+                ShowAboutWindow();
+                break;
         }
+    }
+    // ... Сам метод открытия ...
+    private void ShowScriptHelp()
+    {
+        // 1. Проверка: окно уже открыто?
+        if (_scriptHelpInstance != null && GodotObject.IsInstanceValid(_scriptHelpInstance))
+        {
+            _scriptHelpInstance.PopupCentered();
+            return;
+        }
+
+        // 2. Проверка: сцена назначена?
+        if (_scriptHelpScene == null)
+        {
+            ShowError("Сцена ScriptHelp не назначена в инспекторе!");
+            return;
+        }
+
+        // 3. Создание (Инстанцирование)
+        _scriptHelpInstance = _scriptHelpScene.Instantiate<ScriptHelp>();
+        AddChild(_scriptHelpInstance);
+        _scriptHelpInstance.PopupCentered();
     }
 
     // --- ЛОГИКА КАЛЬКУЛЯТОРА ---

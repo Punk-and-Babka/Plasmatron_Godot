@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://cwwl6wahc6xgq"]
+[gd_scene load_steps=15 format=3 uid="uid://cwwl6wahc6xgq"]
 
 [ext_resource type="Theme" uid="uid://6ev0iiyyr54k" path="res://plasma_theme.tres" id="1_20pc6"]
 [ext_resource type="Script" uid="uid://bl5bb782ddrgv" path="res://UIController.cs" id="1_wkp8b"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://dhwsgvtpr68iu" path="res://AccelerationWindow.tscn" id="7_c6i3y"]
 [ext_resource type="Script" uid="uid://cr7t1fvsdfttu" path="res://CoordinateGrid.cs" id="7_fpfj3"]
 [ext_resource type="FontFile" uid="uid://1el8nihyng7" path="res://fonts/JetBrainsMono-Medium.ttf" id="8_20pc6"]
+[ext_resource type="PackedScene" uid="uid://b58f4cancvjnc" path="res://ScriptHelp.tscn" id="8_c2ibq"]
 [ext_resource type="Script" uid="uid://b28jyihhsrv4g" path="res://Burner.cs" id="8_sc1dx"]
 [ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="9_kjvhd"]
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
@@ -40,6 +41,7 @@ _portWindowScene = ExtResource("3_5vvyt")
 _calcWindowScene = ExtResource("5_20pc6")
 _pieceWindowScene = ExtResource("6_5vvyt")
 _accelWindowScene = ExtResource("7_c6i3y")
+_scriptHelpScene = ExtResource("8_c2ibq")
 _startSequenceButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/StartSequenceButton")
 _cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/CyclesSpinBox")
 _statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/StatusLabel")

@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://0ax482geigp3" path="res://CalculationWindow.cs" id="2_a2nm7"]
 
 [node name="CalculationWindow" type="Window" node_paths=PackedStringArray("_inputDiameter", "_inputRPM", "_outCircumference", "_outTime", "_outResultSpeed", "_btnCalculate", "_btnApply", "_btnClear")]
+title = "Расчет скорости движения"
 size = Vector2i(387, 325)
 theme = ExtResource("1_x68jn")
 script = ExtResource("2_a2nm7")

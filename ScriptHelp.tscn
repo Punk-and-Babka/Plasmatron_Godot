@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://b58f4cancvjnc"]
+
+[ext_resource type="Script" uid="uid://cnvxjgqfo8eb6" path="res://ScriptHelp.cs" id="1_nv6m5"]
+[ext_resource type="Theme" uid="uid://6ev0iiyyr54k" path="res://plasma_theme.tres" id="1_p55j4"]
+
+[node name="ScriptHelp" type="Window" node_paths=PackedStringArray("_label")]
+title = "Справка по командам"
+size = Vector2i(600, 500)
+theme = ExtResource("1_p55j4")
+script = ExtResource("1_nv6m5")
+_label = NodePath("ContentLabel")
+
+[node name="ContentLabel" type="RichTextLabel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+bbcode_enabled = true

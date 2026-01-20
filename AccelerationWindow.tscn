@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://beum226v25i4" path="res://AccelerationWindow.cs" id="2_l6q1g"]
 
 [node name="AccelerationWindow" type="Window" node_paths=PackedStringArray("_inputAccel", "_inputDecel", "_btnApply", "_btnCancel")]
+title = "Переменные ускорения/замедления"
 size = Vector2i(350, 200)
 theme = ExtResource("1_sgmbt")
 script = ExtResource("2_l6q1g")
