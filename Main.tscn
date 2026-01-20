@@ -309,8 +309,9 @@ color = Color(0.0885599, 0.0885599, 0.0885599, 1)
 script = ExtResource("10_5tuhn")
 metadata/_edit_use_anchors_ = true
 
-[node name="CoordinateGrid" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace"]
+[node name="CoordinateGrid" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_targetBackground")]
 script = ExtResource("7_fpfj3")
+_targetBackground = NodePath("../BlackPanel")
 
 [node name="Burner" type="Node2D" parent="MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace" node_paths=PackedStringArray("_grid")]
 z_index = 3

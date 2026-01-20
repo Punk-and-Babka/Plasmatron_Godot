@@ -107,39 +107,71 @@ public partial class ScriptInterpreter : Node
         ScanAndDrawVisuals(_scriptInput.Text);
     }
 
+    // --- ОБНОВЛЕННЫЙ МЕТОД ПРЕДПРОСМОТРА ---
     private void ScanAndDrawVisuals(string text)
     {
         if (string.IsNullOrWhiteSpace(text) || _grid == null) return;
 
         var lines = text.Split('\n');
-        bool cycleFound = false;
 
-        // Ищем последнюю команду CYCLE
+        // Списки для всех найденных точек
+        List<Vector2> pointsToDraw = new List<Vector2>();
+        List<Color> colorsToDraw = new List<Color>();
+
         foreach (var line in lines)
         {
             string cleanLine = line.Trim().ToUpperInvariant();
+
+            // 1. Поиск CYCLE (Желтый и Оранжевый)
             if (cleanLine.StartsWith("CYCLE"))
             {
                 try
                 {
                     var parts = Regex.Split(cleanLine, @"\(|\)|,")
-                        .Select(p => p.Trim())
-                        .Where(p => !string.IsNullOrEmpty(p))
-                        .Skip(1) // Пропускаем слово CYCLE
-                        .ToArray();
+                        .Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)).Skip(1).ToArray();
 
                     if (ExtractCycleCoordinates(parts, out Vector2 a, out Vector2 b))
                     {
-                        UpdateGridPoints(a, b);
-                        cycleFound = true;
+                        pointsToDraw.Add(a);
+                        colorsToDraw.Add(Colors.Yellow); // Точка А
+
+                        pointsToDraw.Add(b);
+                        colorsToDraw.Add(Colors.Orange); // Точка Б
                     }
                 }
-                catch { /* Игнорируем ошибки при наборе текста */ }
+                catch { }
+            }
+            // 2. Поиск GO (Зеленый)
+            else if (cleanLine.StartsWith("GO"))
+            {
+                try
+                {
+                    var parts = Regex.Split(cleanLine, @"\(|\)|,")
+                        .Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)).Skip(1).ToArray();
+
+                    // Парсим координаты GO
+                    float x = 0, y = 0;
+                    if (parts.Length >= 1) x = ParseFloat(parts[0]);
+                    if (parts.Length >= 2) y = ParseFloat(parts[1]);
+
+                    // Добавляем точку
+                    pointsToDraw.Add(new Vector2(x, y));
+                    colorsToDraw.Add(Colors.Green);
+                }
+                catch { }
             }
         }
 
-        // Если циклов нет, убираем точки с экрана
-        if (!cycleFound) UpdateGridPoints(Vector2.Zero, Vector2.Zero);
+        // Отправляем всё на сетку
+        if (pointsToDraw.Count > 0)
+        {
+            _grid.UpdatePoints(pointsToDraw, colorsToDraw);
+        }
+        else
+        {
+            // Очистка, если ничего не нашли
+            _grid.UpdatePoints(new Vector2[] { }, new Color[] { });
+        }
     }
 
     private bool ExtractCycleCoordinates(string[] args, out Vector2 a, out Vector2 b)

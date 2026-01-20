@@ -1,129 +1,148 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class CoordinateGrid : Node2D
 {
     // region ПРИВЯЗКИ
     [ExportGroup("Привязки")]
     [Export] private Control _targetBackground;
-    [Export] private FontFile _font;
     // endregion
 
-    // region НАСТРОЙКИ СЕТКИ (ММ)
     [ExportGroup("Реальные размеры (мм)")]
     [Export] public float RealWorldWidthMM { get; set; } = 1600f;
     [Export] public float RealWorldHeightMM { get; set; } = 900f;
 
-    [ExportGroup("Стиль линий")]
-    [Export] public Color MajorLineColor { get; set; } = new Color(0.1f, 0.2f, 0.5f, 0.9f);
-    [Export] public Color MinorLineColor { get; set; } = new Color(0.2f, 0.2f, 0.3f, 0.6f);
-    [Export] public int MajorLineWidth { get; set; } = 2;
-    [Export] public int MinorLineWidth { get; set; } = 1;
-    // endregion
+    [ExportGroup("Стиль")]
+    [Export] public Color MajorLineColor { get; set; } = new Color(0.2f, 0.4f, 0.8f, 0.5f);
+    [Export] public Color MinorLineColor { get; set; } = new Color(0.2f, 0.4f, 0.8f, 0.2f);
 
-    // ИЗМЕНЕНИЕ: Храним Vector2 вместо float
-    private Vector2[] _points = new Vector2[3];
-    private Color[] _pointColors = new Color[3];
+    private List<Vector2> _points = new List<Vector2>();
+    private List<Color> _pointColors = new List<Color>();
+    private FontFile _font;
 
-    public Rect2 GridArea => _targetBackground != null
-        ? _targetBackground.GetRect()
-        : new Rect2(0, 0, 100, 100);
+    public Rect2 GridArea => GetCurrentArea();
 
     public float PixelsPerMM_X => GridArea.Size.X / Math.Max(1, RealWorldWidthMM);
     public float PixelsPerMM_Y => GridArea.Size.Y / Math.Max(1, RealWorldHeightMM);
 
     public override void _Ready()
     {
-        ZIndex = 2;
-        if (_targetBackground == null) _targetBackground = GetNodeOrNull<Control>("../BlackPanel");
-        if (_font == null) try { _font = GD.Load<FontFile>("res://fonts/times.ttf"); } catch { }
+        ZIndex = 1;
 
-        if (_targetBackground != null) _targetBackground.Resized += QueueRedraw;
-        else GetViewport().SizeChanged += QueueRedraw;
+        // Автопоиск панели
+        if (_targetBackground == null)
+        {
+            _targetBackground = GetParent().GetNodeOrNull<Control>("BlackPanel");
+            if (_targetBackground == null && GetParent().GetParent() != null)
+            {
+                _targetBackground = GetParent().GetParent().GetNodeOrNull<Control>("BlackPanel");
+            }
+        }
+
+        if (_targetBackground == null)
+        {
+            GD.PrintErr("[CoordinateGrid] BlackPanel не найден! Проверь привязку.");
+        }
+        else
+        {
+            _targetBackground.Resized += QueueRedraw;
+        }
+
+        try { _font = GD.Load<FontFile>("res://fonts/times.ttf"); } catch { }
+
+        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+        // Было: CallDeferred(nameof(QueueRedraw)); -> Ошибка "Method not found"
+        // Стало: Используем правильное имя метода движка
+        CallDeferred(CanvasItem.MethodName.QueueRedraw);
     }
 
-    // ИЗМЕНЕНИЕ: Метод теперь принимает Vector2[]
-    public void UpdatePoints(Vector2[] positions, Color[] colors)
+    private Rect2 GetCurrentArea()
     {
-        int len = Math.Min(positions.Length, 3);
-        Array.Copy(positions, _points, len);
+        if (_targetBackground != null && _targetBackground.IsInsideTree())
+        {
+            return new Rect2(Vector2.Zero, _targetBackground.Size);
+        }
+        return new Rect2(0, 0, RealWorldWidthMM, RealWorldHeightMM);
+    }
 
-        if (colors != null && colors.Length >= len)
-            Array.Copy(colors, _pointColors, len);
+    public void UpdatePoints(IEnumerable<Vector2> positions, IEnumerable<Color> colors)
+    {
+        _points.Clear();
+        _pointColors.Clear();
+
+        if (positions != null) _points.AddRange(positions);
+        if (colors != null) _pointColors.AddRange(colors);
+
+        while (_pointColors.Count < _points.Count) _pointColors.Add(Colors.White);
 
         QueueRedraw();
     }
 
     public override void _Draw()
     {
-        if (_font == null || _targetBackground == null) return;
-        if (GridArea.Size.X <= 1 || GridArea.Size.Y <= 1) return;
+        Rect2 area = GridArea;
+        if (area.Size.X < 10 || area.Size.Y < 10) return;
 
-        DrawVerticalLines();
-        DrawHorizontalLines();
-        DrawPointMarkers();
+        DrawGridLines(area);
+        DrawPointMarkers(area);
     }
 
-    private void DrawVerticalLines()
+    private void DrawGridLines(Rect2 area)
     {
+        float scaleX = PixelsPerMM_X;
+        float scaleY = PixelsPerMM_Y;
+
         for (float mm = 0; mm <= RealWorldWidthMM; mm += 50)
         {
-            bool isMajorLine = Mathf.IsEqualApprox(mm % 100, 0);
-            float x = GridArea.Position.X + mm * PixelsPerMM_X;
+            bool major = Mathf.IsEqualApprox(mm % 100, 0);
+            float x = area.Position.X + mm * scaleX;
+            if (x > area.End.X) break;
 
-            DrawLine(new Vector2(x, GridArea.Position.Y), new Vector2(x, GridArea.End.Y),
-                isMajorLine ? MajorLineColor : MinorLineColor, isMajorLine ? MajorLineWidth : MinorLineWidth);
+            DrawLine(new Vector2(x, area.Position.Y), new Vector2(x, area.End.Y),
+                major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            if (isMajorLine && mm > 0)
-            {
-                string label = $"{mm:F0}";
-                DrawString(_font, new Vector2(x + 2, GridArea.End.Y - 5), label, fontSize: 14, modulate: Colors.White);
-            }
+            if (major && _font != null)
+                DrawString(_font, new Vector2(x + 2, area.End.Y - 5), $"{mm:F0}", fontSize: 16);
         }
-    }
 
-    private void DrawHorizontalLines()
-    {
         for (float mm = 0; mm <= RealWorldHeightMM; mm += 50)
         {
-            bool isMajorLine = Mathf.IsEqualApprox(mm % 100, 0);
+            bool major = Mathf.IsEqualApprox(mm % 100, 0);
             float invertedMM = RealWorldHeightMM - mm;
-            float y = GridArea.Position.Y + mm * PixelsPerMM_Y;
+            float y = area.Position.Y + mm * scaleY;
+            if (y > area.End.Y) break;
 
-            DrawLine(new Vector2(GridArea.Position.X, y), new Vector2(GridArea.End.X, y),
-                isMajorLine ? MajorLineColor : MinorLineColor, isMajorLine ? MajorLineWidth : MinorLineWidth);
+            DrawLine(new Vector2(area.Position.X, y), new Vector2(area.End.X, y),
+                major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            if (isMajorLine)
-            {
-                string label = $"{invertedMM:F0}";
-                DrawString(_font, new Vector2(GridArea.Position.X + 5, y - 2), label, fontSize: 14, modulate: Colors.White);
-            }
+            if (major && _font != null)
+                DrawString(_font, new Vector2(area.Position.X + 5, y - 2), $"{invertedMM:F0}", fontSize: 16);
         }
     }
 
-    private void DrawPointMarkers()
+    private void DrawPointMarkers(Rect2 area)
     {
         if (_points == null) return;
+        float scaleX = PixelsPerMM_X;
+        float scaleY = PixelsPerMM_Y;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < _points.Count; i++)
         {
-            // Пропускаем, если точка (0,0) или отрицательная (не задана)
-            if (_points[i].X <= 0 && _points[i].Y <= 0) continue;
-
-            // Расчет позиции с учетом X и Y
-            float x = GridArea.Position.X + _points[i].X * PixelsPerMM_X;
-            // Y инвертируем (0 внизу)
+            float x = area.Position.X + _points[i].X * scaleX;
             float yReal = RealWorldHeightMM - _points[i].Y;
-            float y = GridArea.Position.Y + yReal * PixelsPerMM_Y;
+            float y = area.Position.Y + yReal * scaleY;
+            Color c = _pointColors[i];
 
-            Color color = _pointColors[i];
+            DrawLine(new Vector2(x, area.Position.Y), new Vector2(x, area.End.Y), c, 1);
+            DrawLine(new Vector2(area.Position.X, y), new Vector2(area.End.X, y), c, 1);
+            DrawCircle(new Vector2(x, y), 4f, c);
 
-            // Рисуем перекрестие вместо просто линии
-            DrawLine(new Vector2(x, GridArea.Position.Y), new Vector2(x, GridArea.End.Y), color, 2); // Вертикаль
-            DrawLine(new Vector2(GridArea.Position.X, y), new Vector2(GridArea.End.X, y), color, 2); // Горизонталь
-
-            DrawString(_font, new Vector2(x + 5, y - 20), $"Точка {i}", fontSize: 16, modulate: color);
-            DrawString(_font, new Vector2(x + 5, y), $"{_points[i].X:F0} : {_points[i].Y:F0}", fontSize: 14, modulate: color);
+            if (_font != null)
+            {
+                string label = $"{_points[i].X:0},{_points[i].Y:0}";
+                DrawString(_font, new Vector2(x + 5, y - 5), label, fontSize: 16, modulate: c);
+            }
         }
     }
 }
