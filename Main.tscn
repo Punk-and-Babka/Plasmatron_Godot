@@ -14,7 +14,7 @@
 [ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="9_kjvhd"]
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
 
-[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter", "_btnUp", "_btnDown", "_btnLeft", "_btnRight")]
+[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter", "_fileDialog", "_btnSaveScript", "_btnLoadScript", "_btnUp", "_btnDown", "_btnLeft", "_btnRight")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -56,6 +56,9 @@ _scriptInput = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/S
 _runScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/RunButton")
 _stopScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/StopButton")
 _interpreter = NodePath("ScriptInterpreter")
+_fileDialog = NodePath("ScriptFileDialog")
+_btnSaveScript = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/BtnSaveScript")
+_btnLoadScript = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/BtnLoadScript")
 _btnUp = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Up")
 _btnDown = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Down")
 _btnLeft = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Left")
@@ -428,6 +431,14 @@ focus_mode = 1
 theme_override_colors/font_color = Color(1, 0.415686, 0, 1)
 text = "⟲"
 
+[node name="BtnSaveScript" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
+layout_mode = 2
+text = "Сохранить"
+
+[node name="BtnLoadScript" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
+layout_mode = 2
+text = "Загрузить"
+
 [node name="Spacer" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -447,3 +458,10 @@ _resetButton = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBo
 _statusLabel = NodePath("../MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/Label")
 _grid = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/CoordinateGrid")
 TargetBurner = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/Burner")
+
+[node name="ScriptFileDialog" type="FileDialog" parent="."]
+ok_button_text = "Сохранить"
+cancel_button_text = "Отменить"
+access = 1
+root_subfolder = "scripts"
+filters = PackedStringArray("*.txt ; Text Files")

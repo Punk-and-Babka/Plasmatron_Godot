@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO.Ports;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 public partial class UIController : Control
@@ -63,6 +64,10 @@ public partial class UIController : Control
     [Export] private Button _runScriptButton;    // Кнопка Старт (скрипта)
     [Export] private Button _stopScriptButton;   // Кнопка Стоп (скрипта)
     [Export] private ScriptInterpreter _interpreter; // Ссылка на узел логики
+    // НОВЫЕ ССЫЛКИ ДЛЯ ФАЙЛОВ
+    [Export] private FileDialog _fileDialog;
+    [Export] private Button _btnSaveScript;
+    [Export] private Button _btnLoadScript;
 
     [ExportGroup("Стрелки (ArrowPad)")]
     [Export] private Button _btnUp;
@@ -93,8 +98,39 @@ public partial class UIController : Control
         InitializeMainMenu();
         InitializeSlider();
         ShowPortSelectionWindow();
+        InitializeFileSystem(); // Настройка папок и диалогов
 
         CallDeferred(nameof(InitializeDefaultSpeed));
+    }
+
+    // --- Настройка файловой системы ---
+    private void InitializeFileSystem()
+    {
+        string scriptPath = "user://scripts";
+
+        // 1. Создаем папку
+        if (!DirAccess.DirExistsAbsolute(scriptPath))
+        {
+            DirAccess.MakeDirRecursiveAbsolute(scriptPath);
+        }
+
+        // 2. Настраиваем диалог
+        if (_fileDialog != null)
+        {
+            // Важно: Сначала указываем, что работаем с папкой пользователя
+            _fileDialog.Access = FileDialog.AccessEnum.Userdata; 
+
+            // Вместо RootSubfolder используем CurrentDir - это не вызывает ошибок
+            _fileDialog.CurrentDir = "scripts";
+
+            // Фильтры (чтобы видеть только скрипты)
+            _fileDialog.Filters = new string[] { "*.txt ; Текстовые файлы", "*.cnc ; G-Code" };
+
+            _fileDialog.FileSelected += OnFileSelected;
+        }
+
+        if (_btnSaveScript != null) _btnSaveScript.Pressed += OnSaveScriptPressed;
+        if (_btnLoadScript != null) _btnLoadScript.Pressed += OnLoadScriptPressed;
     }
 
     private void InitializeSlider()
@@ -320,7 +356,7 @@ public partial class UIController : Control
             case 0: ShowPortSelectionWindow(); break;
             case 1: ShowCalculator(); break;
             case 2: ShowAccelWindow(); break;
-            case 3: ShowPieceWindow(); break; 
+            case 3: ShowPieceWindow(); break;
         }
     }
 
@@ -543,6 +579,166 @@ public partial class UIController : Control
         _interpreter?.StopScript();
         UpdateStatus("Скрипт остановлен.");
     }
+
+    // --- НОВОЕ: Методы сохранения и загрузки ---
+    private void OnSaveScriptPressed()
+    {
+        if (_fileDialog == null) return;
+        _fileDialog.FileMode = FileDialog.FileModeEnum.SaveFile;
+        _fileDialog.Title = "Сохранить скрипт";
+        _fileDialog.PopupCentered();
+    }
+
+    private void OnLoadScriptPressed()
+    {
+        if (_fileDialog == null) return;
+        _fileDialog.FileMode = FileDialog.FileModeEnum.OpenFile;
+        _fileDialog.Title = "Загрузить скрипт";
+        _fileDialog.PopupCentered();
+    }
+
+    private void OnFileSelected(string path)
+    {
+        if (_fileDialog.FileMode == FileDialog.FileModeEnum.SaveFile)
+            SaveScriptToFile(path);
+        else if (_fileDialog.FileMode == FileDialog.FileModeEnum.OpenFile)
+            LoadScriptFromFile(path);
+    }
+
+    private void SaveScriptToFile(string path)
+    {
+        using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+        if (file != null)
+        {
+            file.StoreString(_scriptInput.Text); // Используем _scriptInput
+            GD.Print($"Скрипт сохранен: {path}");
+        }
+        else
+            ShowError($"Ошибка создания файла: {path}");
+    }
+
+    private void LoadScriptFromFile(string path)
+    {
+        using var file = FileAccess.Open(path, FileAccess.ModeFlags.Read);
+        if (file != null)
+        {
+            string content = file.GetAsText();
+            _scriptInput.Text = content;
+            GD.Print($"Скрипт загружен: {path}");
+
+            // СРАЗУ РИСУЕМ ПРЕВЬЮ
+            ParseScriptAndDraw(content);
+        }
+        else
+            ShowError($"Ошибка чтения файла: {path}");
+    }
+    // --- НОВЫЙ МЕТОД: Предпросмотр траектории ---
+    // Обновленный метод парсинга, полностью повторяющий логику ScriptInterpreter
+    private void ParseScriptAndDraw(string scriptText)
+    {
+        if (_grid == null) return;
+
+        // Если текст пустой - очищаем сетку
+        if (string.IsNullOrWhiteSpace(scriptText))
+        {
+            _grid.UpdatePoints(new Vector2[0], new Color[0]);
+            return;
+        }
+
+        List<Vector2> points = new List<Vector2>();
+        List<Color> colors = new List<Color>();
+
+        string[] lines = scriptText.Split('\n');
+
+        foreach (string rawLine in lines)
+        {
+            // 1. Очистка и приведение к верхнему регистру (как в интерпретаторе)
+            string line = rawLine.Trim().ToUpperInvariant();
+
+            // Пропуск комментариев (// и #)
+            if (string.IsNullOrEmpty(line) || line.StartsWith("//") || line.StartsWith("#")) continue;
+
+            // 2. Разбиваем строку по разделителям: скобки и запятые
+            // Это "сердце" вашего интерпретатора - позволяет понимать форматы GO(x,y) и GO x,y
+            var parts = Regex.Split(line, @"\(|\)|,")
+                .Select(p => p.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToArray();
+
+            if (parts.Length == 0) continue;
+
+            string command = parts[0];       // Имя команды (GO, CYCLE...)
+            string[] args = parts.Skip(1).ToArray(); // Аргументы
+
+            // 3. Обработка команд
+            if (command == "GO")
+            {
+                // Логика: GO X или GO X, Y
+                if (args.Length >= 1)
+                {
+                    float x = ParseFloatSafe(args[0]);
+                    float y = (args.Length >= 2) ? ParseFloatSafe(args[1]) : 0f;
+
+                    points.Add(new Vector2(x, y));
+                    colors.Add(Colors.Green); // Зеленый для обычного движения
+                }
+            }
+            else if (command == "CYCLE")
+            {
+                // Логика: Ищем 2 точки (Start и End)
+                // Вариант А: X1, Y1, X2, Y2, Count (5 аргументов)
+                if (args.Length >= 5)
+                {
+                    float x1 = ParseFloatSafe(args[0]);
+                    float y1 = ParseFloatSafe(args[1]);
+                    float x2 = ParseFloatSafe(args[2]);
+                    float y2 = ParseFloatSafe(args[3]);
+
+                    points.Add(new Vector2(x1, y1));
+                    colors.Add(Colors.Yellow); // Start (Желтый)
+
+                    points.Add(new Vector2(x2, y2));
+                    colors.Add(Colors.Orange); // End (Оранжевый)
+                }
+                // Вариант Б: X1, X2, Count (3 аргумента, Y=0)
+                else if (args.Length >= 3)
+                {
+                    float x1 = ParseFloatSafe(args[0]);
+                    float x2 = ParseFloatSafe(args[1]);
+
+                    points.Add(new Vector2(x1, 0));
+                    colors.Add(Colors.Yellow);
+
+                    points.Add(new Vector2(x2, 0));
+                    colors.Add(Colors.Orange);
+                }
+            }
+        }
+
+        // 4. Отрисовка
+        if (points.Count > 0)
+        {
+            _grid.UpdatePoints(points, colors);
+            GD.Print($"[Preview] Отрисовано {points.Count} точек.");
+        }
+        else
+        {
+            // Если ничего не нашли (пустой скрипт или одни комменты) - чистим сетку
+            _grid.UpdatePoints(new Vector2[0], new Color[0]);
+        }
+    }
+
+    // Вспомогательный безопасный парсер (чтобы не дублировать try-catch)
+    private float ParseFloatSafe(string val)
+    {
+        // Заменяем запятую на точку для надежности
+        if (float.TryParse(val.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
+        {
+            return result;
+        }
+        return 0f;
+    }
+    // ------------------------------------------
 
     public void SendCommand(string command)
     {
