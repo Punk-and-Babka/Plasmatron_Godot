@@ -166,33 +166,35 @@ public partial class UIController : Control
 
         if (_speedSlider != null) _speedSlider.ValueChanged += OnSpeedSliderChanged;
 
+        // --- ИСПРАВЛЕННАЯ ЛОГИКА ВВОДА СКОРОСТИ ---
         if (_speedInput != null)
         {
+            // 1. Нажатие ENTER
             _speedInput.TextSubmitted += (text) =>
             {
-                string cleanText = Regex.Replace(text, @"[^\d.,]", "").Replace(",", ".");
-
-                if (float.TryParse(cleanText, NumberStyles.Any, CultureInfo.InvariantCulture, out float val))
-                {
-                    OnSpeedInputChanged(val);
-                    _speedInput.ReleaseFocus();
-                }
-                else
-                {
-                    UpdateSpeedSlider(_lastSentSliderSpeed);
-                }
+                SubmitSpeedInput(text);      // Сначала сохраняем значение
+                _speedInput.ReleaseFocus();  // Снимаем фокус (это вызовет FocusExited)
             };
 
+            // 2. Получение фокуса (кликнули в поле)
             _speedInput.FocusEntered += () =>
             {
+                // Показываем чистое число для удобного редактирования (например "100")
                 _speedInput.Text = _lastSentSliderSpeed.ToString("F0");
             };
 
+            // 3. Потеря фокуса (Enter, Escape или клик в другое место)
             _speedInput.FocusExited += () =>
             {
+                // Сначала пытаемся сохранить то, что ввел пользователь
+                SubmitSpeedInput(_speedInput.Text);
+
+                // Затем форматируем отображение ("Скорость: 100 мм/сек")
+                // используя уже ОБНОВЛЕННОЕ значение _lastSentSliderSpeed
                 UpdateSpeedSlider(_lastSentSliderSpeed);
             };
         }
+        // -------------------------------------------
 
         _moveButton.Pressed += OnMoveButtonPressed;
         _stopButton.Pressed += OnStopButtonPressed;
@@ -201,7 +203,7 @@ public partial class UIController : Control
         if (_inputPoint1 != null) _inputPoint1.TextChanged += (t) => UpdateGridVisuals();
         if (_inputPoint2 != null) _inputPoint2.TextChanged += (t) => UpdateGridVisuals();
 
-        // --- ИЗМЕНЕНИЕ: Подключаем кнопки захвата (GET) ---
+        // Подключаем кнопки захвата (GET)
         if (_btnGetPoint0 != null) _btnGetPoint0.Pressed += () => SetInputFromBurner(_inputPoint0);
         if (_btnGetPoint1 != null) _btnGetPoint1.Pressed += () => SetInputFromBurner(_inputPoint1);
         if (_btnGetPoint2 != null) _btnGetPoint2.Pressed += () => SetInputFromBurner(_inputPoint2);
@@ -220,7 +222,7 @@ public partial class UIController : Control
             _stopScriptButton.Pressed += OnStopScriptPressed;
 
         // Подключаем стрелки управления
-        SetupArrowButton(_btnUp, new Vector2(0, 1));  // Вверх (+Y в логике горелки)
+        SetupArrowButton(_btnUp, new Vector2(0, 1));    // Вверх
         SetupArrowButton(_btnDown, new Vector2(0, -1)); // Вниз
         SetupArrowButton(_btnLeft, new Vector2(-1, 0)); // Влево
         SetupArrowButton(_btnRight, new Vector2(1, 0)); // Вправо
@@ -844,7 +846,19 @@ public partial class UIController : Control
 
         return new Vector2(x, y);
     }
+    // Метод для парсинга и применения скорости из текстового поля
+    private void SubmitSpeedInput(string text)
+    {
+        // Оставляем только цифры, точки и запятые
+        string cleanText = Regex.Replace(text, @"[^\d.,]", "").Replace(",", ".");
 
+        if (float.TryParse(cleanText, NumberStyles.Any, CultureInfo.InvariantCulture, out float val))
+        {
+            // Если число валидное - применяем его
+            OnSpeedInputChanged(val);
+        }
+        // Если число не валидное - ничего не делаем, FocusExited потом вернет старое значение
+    }
     // ---------------------------------------------------
 
     private void OnPositionUpdated(Vector2 position)
