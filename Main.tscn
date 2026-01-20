@@ -1,10 +1,11 @@
-[gd_scene load_steps=12 format=3 uid="uid://cwwl6wahc6xgq"]
+[gd_scene load_steps=13 format=3 uid="uid://cwwl6wahc6xgq"]
 
 [ext_resource type="Theme" uid="uid://6ev0iiyyr54k" path="res://plasma_theme.tres" id="1_20pc6"]
 [ext_resource type="Script" uid="uid://bl5bb782ddrgv" path="res://UIController.cs" id="1_wkp8b"]
 [ext_resource type="PackedScene" uid="uid://f8ijx82pgt4v" path="res://ui/about_window.tscn" id="2_20pc6"]
 [ext_resource type="PackedScene" uid="uid://blx66uippcuma" path="res://PortSelectionWindow.tscn" id="3_5vvyt"]
 [ext_resource type="PackedScene" uid="uid://d2whrgrjhvl4g" path="res://CalculationWindow.tscn" id="5_20pc6"]
+[ext_resource type="PackedScene" uid="uid://b3eadx3oocqm6" path="res://PieceWindow.tscn" id="6_5vvyt"]
 [ext_resource type="Script" uid="uid://cxumsvhahytmn" path="res://SpeedInputHandler.cs" id="6_j4qnp"]
 [ext_resource type="Script" uid="uid://cr7t1fvsdfttu" path="res://CoordinateGrid.cs" id="7_fpfj3"]
 [ext_resource type="FontFile" uid="uid://1el8nihyng7" path="res://fonts/JetBrainsMono-Medium.ttf" id="8_20pc6"]
@@ -36,6 +37,7 @@ helpMenu = NodePath("MainVerticalLayout/MainMenuBar/Help")
 _aboutWindowScene = ExtResource("2_20pc6")
 _portWindowScene = ExtResource("3_5vvyt")
 _calcWindowScene = ExtResource("5_20pc6")
+_pieceWindowScene = ExtResource("6_5vvyt")
 _startSequenceButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/StartSequenceButton")
 _cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/CyclesSpinBox")
 _statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/StatusLabel")

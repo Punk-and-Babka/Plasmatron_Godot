@@ -10,8 +10,8 @@ public partial class CoordinateGrid : Node2D
     // endregion
 
     [ExportGroup("Настройки Шрифта")]
-    [Export] public Font LabelFont { get; set; } // <--- Сюда перетащить шрифт в Инспекторе
-    [Export] public int FontSize { get; set; } = 24; // Размер шрифта вынесли в переменную
+    [Export] public Font LabelFont { get; set; }
+    [Export] public int FontSize { get; set; } = 24;
 
     [ExportGroup("Реальные размеры (мм)")]
     [Export] public float RealWorldWidthMM { get; set; } = 1600f;
@@ -20,11 +20,17 @@ public partial class CoordinateGrid : Node2D
     [ExportGroup("Стиль")]
     [Export] public Color MajorLineColor { get; set; } = new Color(0.2f, 0.4f, 0.8f, 0.5f);
     [Export] public Color MinorLineColor { get; set; } = new Color(0.2f, 0.4f, 0.8f, 0.2f);
+    // НОВОЕ: Цвета для детали
+    [Export] public Color PieceBorderColor { get; set; } = new Color(0.0f, 0.8f, 1.0f, 0.8f); // Яркий циан
+    [Export] public Color PieceFillColor { get; set; } = new Color(0.0f, 0.8f, 1.0f, 0.1f);   // Полупрозрачный циан
 
+    // Данные траектории
     private List<Vector2> _points = new List<Vector2>();
     private List<Color> _pointColors = new List<Color>();
 
-    // FontFile больше не нужен, используем LabelFont
+    // НОВОЕ: Данные детали
+    private bool _hasPiece = false;
+    private Vector2 _pieceSizeMM; // X = Width, Y = Height
 
     public Rect2 GridArea => GetCurrentArea();
 
@@ -45,16 +51,9 @@ public partial class CoordinateGrid : Node2D
         }
 
         if (_targetBackground == null)
-        {
             GD.PrintErr("[CoordinateGrid] BlackPanel не найден! Проверь привязку.");
-        }
         else
-        {
             _targetBackground.Resized += QueueRedraw;
-        }
-
-        // Мы убрали загрузку "times.ttf".
-        // Теперь шрифт берется из LabelFont.
 
         CallDeferred(CanvasItem.MethodName.QueueRedraw);
     }
@@ -72,12 +71,24 @@ public partial class CoordinateGrid : Node2D
     {
         _points.Clear();
         _pointColors.Clear();
-
         if (positions != null) _points.AddRange(positions);
         if (colors != null) _pointColors.AddRange(colors);
-
         while (_pointColors.Count < _points.Count) _pointColors.Add(Colors.White);
+        QueueRedraw();
+    }
 
+    // --- НОВЫЙ МЕТОД: Установка прямоугольника детали ---
+    public void SetPieceRectangle(float widthMM, float heightMM)
+    {
+        if (widthMM <= 0 || heightMM <= 0)
+        {
+            _hasPiece = false;
+        }
+        else
+        {
+            _hasPiece = true;
+            _pieceSizeMM = new Vector2(widthMM, heightMM);
+        }
         QueueRedraw();
     }
 
@@ -86,12 +97,50 @@ public partial class CoordinateGrid : Node2D
         Rect2 area = GridArea;
         if (area.Size.X < 10 || area.Size.Y < 10) return;
 
-        // Определяем шрифт: Если в Инспекторе пусто, берем дефолтный шрифт движка
         Font fontToUse = LabelFont ?? ThemeDB.FallbackFont;
 
         DrawGridLines(area, fontToUse);
+
+        // НОВОЕ: Рисуем деталь ПЕРЕД точками траектории, чтобы траектория была поверх
+        DrawPiece(area);
+
         DrawPointMarkers(area, fontToUse);
     }
+
+    // --- НОВЫЙ МЕТОД: Логика отрисовки детали ---
+    private void DrawPiece(Rect2 area)
+    {
+        if (!_hasPiece) return;
+
+        float scaleX = PixelsPerMM_X;
+        float scaleY = PixelsPerMM_Y;
+
+        // 1. Находим центр рабочего поля в мм
+        float centerMmX = RealWorldWidthMM / 2.0f;
+        float centerMmY = RealWorldHeightMM / 2.0f;
+
+        // 2. Вычисляем левый нижний угол детали (в мм)
+        // (Помним, что в мире ЧПУ Y растет вверх, поэтому "нижний" угол имеет меньший Y)
+        float pieceMinMmX = centerMmX - (_pieceSizeMM.X / 2.0f);
+        float pieceMinMmY = centerMmY - (_pieceSizeMM.Y / 2.0f);
+
+        // 3. Переводим в пиксели экрана
+        // Важно: для Y используем инверсию, т.к. на экране Y растет вниз
+        float pixelX = area.Position.X + pieceMinMmX * scaleX;
+        // Верхняя граница на экране соответствует максимальному Y в мире (center + height/2)
+        float pixelY_TopEdge = area.Position.Y + (RealWorldHeightMM - (centerMmY + _pieceSizeMM.Y / 2.0f)) * scaleY;
+
+        float pixelWidth = _pieceSizeMM.X * scaleX;
+        float pixelHeight = _pieceSizeMM.Y * scaleY;
+
+        Rect2 pieceRectPixel = new Rect2(pixelX, pixelY_TopEdge, pixelWidth, pixelHeight);
+
+        // Рисуем заливку
+        DrawRect(pieceRectPixel, PieceFillColor, true);
+        // Рисуем рамку (толщиной 3 пикселя)
+        DrawRect(pieceRectPixel, PieceBorderColor, false, 3.0f);
+    }
+    // -------------------------------------------
 
     private void DrawGridLines(Rect2 area, Font font)
     {
@@ -107,8 +156,8 @@ public partial class CoordinateGrid : Node2D
             DrawLine(new Vector2(x, area.Position.Y), new Vector2(x, area.End.Y),
                 major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            if (major && mm > 0)
-                DrawString(font, new Vector2(x + 2, area.End.Y - 5), $"{mm:F0}", fontSize: 16); // Тут шрифт поменьше для сетки
+            if (major && mm > 0 && font != null)
+                DrawString(font, new Vector2(x + 2, area.End.Y - 5), $"{mm:F0}", fontSize: 16);
         }
 
         for (float mm = 0; mm <= RealWorldHeightMM; mm += 50)
@@ -121,7 +170,7 @@ public partial class CoordinateGrid : Node2D
             DrawLine(new Vector2(area.Position.X, y), new Vector2(area.End.X, y),
                 major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            if (major && invertedMM > 0)
+            if (major && invertedMM > 0 && font != null)
                 DrawString(font, new Vector2(area.Position.X + 5, y - 2), $"{invertedMM:F0}", fontSize: 16);
         }
     }
@@ -146,7 +195,6 @@ public partial class CoordinateGrid : Node2D
             if (font != null)
             {
                 string label = $"{_points[i].X:0},{_points[i].Y:0}";
-                // Используем переменную FontSize (по умолчанию 24)
                 DrawString(font, new Vector2(x + 5, y - 5), label, fontSize: FontSize, modulate: c);
             }
         }

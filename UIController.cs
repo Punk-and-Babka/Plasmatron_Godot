@@ -31,6 +31,7 @@ public partial class UIController : Control
     [Export] private PackedScene _aboutWindowScene;
     [Export] private PackedScene _portWindowScene;
     [Export] private PackedScene _calcWindowScene; // Ссылка на сцену калькулятора
+    [Export] private PackedScene _pieceWindowScene;
 
 
     [ExportGroup("Управление")]
@@ -72,6 +73,7 @@ public partial class UIController : Control
     private SerialPort _serialPort;
     private PortSelectionWindow _portWindow;
     private CalculationWindow _calcWindowInstance;
+    private PieceWindow _pieceWindowInstance;
 
     private Vector2 _lastPosition;
     private float _lastSpeed;
@@ -304,9 +306,9 @@ public partial class UIController : Control
         switch (id)
         {
             case 0: ShowPortSelectionWindow(); break;
-            case 1: ShowCalculator(); break; // <--- ИЗМЕНЕНИЕ: Запуск калькулятора
+            case 1: ShowCalculator(); break;
             case 2: GD.Print("TODO: Accel"); break;
-            case 3: GD.Print("TODO: Piece"); break;
+            case 3: ShowPieceWindow(); break; 
         }
     }
 
@@ -377,6 +379,41 @@ public partial class UIController : Control
             win.PopupCentered();
         }
     }
+
+    // --- ЛОГИКА ОКНА ДЕТАЛИ ---
+    private void ShowPieceWindow()
+    {
+        if (_pieceWindowInstance != null && GodotObject.IsInstanceValid(_pieceWindowInstance))
+        {
+            _pieceWindowInstance.PopupCentered();
+            return;
+        }
+
+        if (_pieceWindowScene == null)
+        {
+            ShowError("Ошибка: Сцена окна детали не назначена!");
+            return;
+        }
+
+        _pieceWindowInstance = _pieceWindowScene.Instantiate<PieceWindow>();
+        AddChild(_pieceWindowInstance);
+
+        // Подписываемся на сигнал
+        _pieceWindowInstance.PieceDimensionsApplied += OnPieceDimensionsApplied;
+
+        _pieceWindowInstance.PopupCentered();
+    }
+
+    private void OnPieceDimensionsApplied(float width, float height)
+    {
+        if (_grid == null) return;
+
+        GD.Print($"Применена деталь: {width}x{height} мм");
+
+        // Передаем данные в сетку
+        _grid.SetPieceRectangle(width, height);
+    }
+    // ---------------------------
 
     private void OnPortSelected() { if (_portWindow.UseMockPort) InitializeMockPort(); else InitializeSerialPort(); }
     private void InitializeMockPort() { GD.Print("Mock Port Started"); }
