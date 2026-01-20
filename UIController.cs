@@ -648,32 +648,44 @@ public partial class UIController : Control
     }
     public override void _Input(InputEvent @event)
     {
-        // 1. ESCAPE (ui_cancel) - Всегда сбрасывает фокус
+        // 1. ESCAPE (Сброс фокуса)
         if (@event.IsActionPressed("ui_cancel"))
         {
             Control focused = GetViewport().GuiGetFocusOwner();
-            if (focused != null)
-            {
-                focused.ReleaseFocus();
-                // Можно добавить лог для проверки
-                // GD.Print("Фокус сброшен через ESC"); 
-            }
-            return; // Выходим, чтобы не обрабатывать дальше
+            if (focused != null) focused.ReleaseFocus();
+            return;
         }
 
-        // 2. ENTER (ui_accept) - "Умный" сброс
-        if (@event.IsActionPressed("ui_accept"))
+        // 2. ENTER (Подтверждение ввода)
+        if (@event is InputEventKey kEnter && kEnter.Pressed &&
+           (kEnter.Keycode == Key.Enter || kEnter.Keycode == Key.KpEnter))
         {
             Control focused = GetViewport().GuiGetFocusOwner();
+            if (focused is LineEdit) focused.ReleaseFocus();
+        }
 
-            // Если мы вводим цифры (LineEdit) - Enter подтверждает ввод и снимает фокус
-            if (focused is LineEdit)
+        // 3. БЛОКИРОВКА ПРЫЖКОВ ФОКУСА (СТРЕЛКИ)
+        if (@event is InputEventKey k && k.Pressed)
+        {
+            // Проверяем, нажата ли одна из стрелок
+            if (k.Keycode == Key.Up || k.Keycode == Key.Down ||
+                k.Keycode == Key.Left || k.Keycode == Key.Right)
             {
-                focused.ReleaseFocus();
-            }
+                Control focused = GetViewport().GuiGetFocusOwner();
 
-            // ВАЖНО: Если это CodeEdit (скрипты) или TextEdit - мы НИЧЕГО не делаем.
-            // Enter просто сработает как перенос строки внутри текстового поля.
+                // Логика:
+                // Если фокуса НЕТ вообще (focused == null) -> Блокируем, чтобы не прыгнул на SpinBox.
+                // Если фокус ЕСТЬ, но это НЕ поле ввода -> Блокируем, чтобы не менял фокус на соседнюю кнопку.
+                // Если фокус ЕСТЬ и это поле ввода (LineEdit) -> НЕ блокируем, даем двигать курсор в тексте.
+
+                bool isTyping = focused is LineEdit || focused is CodeEdit || focused is TextEdit;
+
+                if (!isTyping)
+                {
+                    // Говорим движку: "Я уже обработал эту кнопку, не отдавай её в GUI"
+                    GetViewport().SetInputAsHandled();
+                }
+            }
         }
     }
 
