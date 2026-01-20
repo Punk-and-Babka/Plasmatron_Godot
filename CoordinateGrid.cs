@@ -30,7 +30,6 @@ public partial class CoordinateGrid : Node2D
     {
         ZIndex = 1;
 
-        // Автопоиск панели
         if (_targetBackground == null)
         {
             _targetBackground = GetParent().GetNodeOrNull<Control>("BlackPanel");
@@ -51,9 +50,6 @@ public partial class CoordinateGrid : Node2D
 
         try { _font = GD.Load<FontFile>("res://fonts/times.ttf"); } catch { }
 
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
-        // Было: CallDeferred(nameof(QueueRedraw)); -> Ошибка "Method not found"
-        // Стало: Используем правильное имя метода движка
         CallDeferred(CanvasItem.MethodName.QueueRedraw);
     }
 
@@ -93,6 +89,7 @@ public partial class CoordinateGrid : Node2D
         float scaleX = PixelsPerMM_X;
         float scaleY = PixelsPerMM_Y;
 
+        // Вертикальные
         for (float mm = 0; mm <= RealWorldWidthMM; mm += 50)
         {
             bool major = Mathf.IsEqualApprox(mm % 100, 0);
@@ -102,10 +99,12 @@ public partial class CoordinateGrid : Node2D
             DrawLine(new Vector2(x, area.Position.Y), new Vector2(x, area.End.Y),
                 major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            if (major && _font != null)
+            // ИЗМЕНЕНИЕ: Добавлено условие 'mm > 0', чтобы не рисовать 0 в начале
+            if (major && _font != null && mm > 0)
                 DrawString(_font, new Vector2(x + 2, area.End.Y - 5), $"{mm:F0}", fontSize: 16);
         }
 
+        // Горизонтальные
         for (float mm = 0; mm <= RealWorldHeightMM; mm += 50)
         {
             bool major = Mathf.IsEqualApprox(mm % 100, 0);
@@ -116,7 +115,8 @@ public partial class CoordinateGrid : Node2D
             DrawLine(new Vector2(area.Position.X, y), new Vector2(area.End.X, y),
                 major ? MajorLineColor : MinorLineColor, major ? 2 : 1);
 
-            if (major && _font != null)
+            // ИЗМЕНЕНИЕ: Добавлено условие 'invertedMM > 0', чтобы не рисовать 0 внизу
+            if (major && _font != null && invertedMM > 0)
                 DrawString(_font, new Vector2(area.Position.X + 5, y - 2), $"{invertedMM:F0}", fontSize: 16);
         }
     }
@@ -141,7 +141,8 @@ public partial class CoordinateGrid : Node2D
             if (_font != null)
             {
                 string label = $"{_points[i].X:0},{_points[i].Y:0}";
-                DrawString(_font, new Vector2(x + 5, y - 5), label, fontSize: 16, modulate: c);
+                // ИЗМЕНЕНИЕ: Увеличен шрифт с 16 до 24
+                DrawString(_font, new Vector2(x + 5, y - 5), label, fontSize: 24, modulate: c);
             }
         }
     }
