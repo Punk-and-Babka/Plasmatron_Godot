@@ -170,17 +170,25 @@ public partial class Burner : Node2D
         // 2. РУЧНОЕ УПРАВЛЕНИЕ
         else if (!IsAutoSequenceActive)
         {
-            // 1. Читаем клавиатуру
-            float keyX = Input.GetAxis("Burner_left", "Burner_right");
-            float keyY = Input.GetAxis("Burner_down", "Burner_up");
-            Vector2 keyboardInput = new Vector2(keyX, keyY);
+            // --- ЗАЩИТА ОТ ВВОДА ПРИ НАБОРЕ ТЕКСТА ---
+            Vector2 keyboardInput = Vector2.Zero;
 
-            // 2. Суммируем с экранными кнопками
-            // Если нажата и клавиатура, и кнопка - берем то, что не ноль.
-            // Clamp нужен, чтобы сумма (1 + 1) не дала двойную скорость.
+            // Получаем элемент, на котором сейчас фокус
+            Control focusedControl = GetViewport().GuiGetFocusOwner();
+
+            // Проверяем: если фокус НЕ на текстовом поле, то разрешаем читать клавиатуру
+            if (!(focusedControl is CodeEdit || focusedControl is LineEdit || focusedControl is TextEdit))
+            {
+                float keyX = Input.GetAxis("Burner_left", "Burner_right");
+                float keyY = Input.GetAxis("Burner_down", "Burner_up");
+                keyboardInput = new Vector2(keyX, keyY);
+            }
+            // ------------------------------------------
+
+            // 2. Суммируем с экранными кнопками (они должны работать всегда)
             Vector2 combinedInput = keyboardInput + InterfaceInputVector;
 
-            // Ограничиваем длину вектора единицей (чтобы по диагонали не ехал быстрее)
+            // Ограничиваем длину вектора единицей
             if (combinedInput.Length() > 1) combinedInput = combinedInput.Normalized();
 
             Vector2 inputDir = combinedInput;
@@ -189,6 +197,8 @@ public partial class Burner : Node2D
             {
                 targetVelocity = inputDir * MaxSpeedMM;
                 currentRate = _accelerationRate;
+
+                // Отправляем команду, если начали двигаться (порог > 1.0f)
                 if (_currentVelocity.Length() > 1.0f)
                 {
                     SendMovementCommand(PositionMM + inputDir * 100f);
@@ -203,10 +213,6 @@ public partial class Burner : Node2D
 
         _currentVelocity = _currentVelocity.MoveToward(targetVelocity, currentRate * delta);
         PositionMM += _currentVelocity * delta;
-
-        if (!IsMovingToTarget && !IsAutoSequenceActive && _currentVelocity == Vector2.Zero && targetVelocity == Vector2.Zero)
-        {
-        }
     }
 
     // --- УПРАВЛЕНИЕ ---

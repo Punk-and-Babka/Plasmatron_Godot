@@ -190,6 +190,7 @@ public partial class UIController : Control
 
     public override void _Process(double delta)
     {
+
         _updateTimer += (float)delta;
 
         if (_burner != null)
@@ -298,6 +299,15 @@ public partial class UIController : Control
             if (helpMenu.IsConnected(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnHelpMenuIdPressed))))
                 helpMenu.Disconnect(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnHelpMenuIdPressed)));
             helpMenu.IdPressed += OnHelpMenuIdPressed;
+        }
+    }
+    private void OnBackgroundGuiInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton mouse && mouse.Pressed)
+        {
+            // Снимаем фокус с любого элемента при клике в пустоту
+            Control focused = GetViewport().GuiGetFocusOwner();
+            if (focused != null) focused.ReleaseFocus();
         }
     }
 
@@ -596,6 +606,22 @@ public partial class UIController : Control
     {
         if (_burner != null && _burner.IsAutoSequenceActive)
             UpdateStatus($"Циклов осталось: {_burner.CyclesRemaining}");
+    }
+    public override void _Input(InputEvent @event)
+    {
+        // Если нажали ESCAPE или ENTER
+        if (@event.IsActionPressed("ui_cancel") || @event.IsActionPressed("ui_accept"))
+        {
+            // Находим, у кого сейчас фокус
+            Control focused = GetViewport().GuiGetFocusOwner();
+
+            // Если фокус у текстового поля - забираем его
+            if (focused is LineEdit || focused is CodeEdit || focused is TextEdit)
+            {
+                focused.ReleaseFocus();
+                // Теперь фокус стал null, и горелка снова поедет
+            }
+        }
     }
 
     private void OnStartSequencePressed()

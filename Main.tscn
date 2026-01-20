@@ -125,7 +125,7 @@ MaxSpeed = 500.0
 [node name="SpeedSlider" type="HSlider" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/SpeedContainer"]
 custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 1
 min_value = 1.0
 max_value = 500.0
 value = 100.0
@@ -168,6 +168,7 @@ horizontal_alignment = 1
 [node name="Input_P0" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 1
 placeholder_text = "X; Y"
 alignment = 1
 
@@ -187,6 +188,7 @@ horizontal_alignment = 1
 [node name="Input_P1" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 1
 placeholder_text = "X; Y"
 alignment = 1
 
@@ -206,6 +208,7 @@ horizontal_alignment = 1
 [node name="Input_P2" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 1
 placeholder_text = "X; Y"
 alignment = 1
 
@@ -346,6 +349,7 @@ layout_mode = 2
 [node name="Btn_Up" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+focus_mode = 1
 theme_override_font_sizes/font_size = 40
 text = "▲"
 
@@ -355,12 +359,14 @@ layout_mode = 2
 [node name="Btn_Left" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+focus_mode = 1
 theme_override_font_sizes/font_size = 40
 text = "◀"
 
 [node name="Btn_Home" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+focus_mode = 1
 theme_override_font_sizes/font_size = 40
 text = "●"
 icon_alignment = 1
@@ -368,6 +374,7 @@ icon_alignment = 1
 [node name="Btn_Right" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+focus_mode = 1
 theme_override_font_sizes/font_size = 40
 text = "▶"
 
@@ -377,6 +384,7 @@ layout_mode = 2
 [node name="Btn_Down" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+focus_mode = 1
 theme_override_font_sizes/font_size = 40
 text = "▼"
 
@@ -397,20 +405,24 @@ text = "Статус"
 custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
 size_flags_vertical = 3
+focus_mode = 1
 
 [node name="ScriptButtons" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup"]
 layout_mode = 2
 
 [node name="RunButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
 layout_mode = 2
+focus_mode = 1
 text = "Старт"
 
 [node name="StopButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
 layout_mode = 2
+focus_mode = 1
 text = "Стоп"
 
 [node name="ResetButton" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons"]
 layout_mode = 2
+focus_mode = 1
 theme_override_colors/font_color = Color(1, 0.415686, 0, 1)
 text = "⟲"
 
