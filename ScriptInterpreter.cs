@@ -407,7 +407,7 @@ public partial class ScriptInterpreter : Node
         if (count <= 0) return;
 
         // Рисуем на сетке
-        UpdateGridPoints(vecA, vecB);
+        //UpdateGridPoints(vecA, vecB);
 
         _cyclePointA = vecA;
         _cyclePointB = vecB;
@@ -443,6 +443,8 @@ public partial class ScriptInterpreter : Node
 
         ClearHighlighting();
         ParseScriptText(scriptText);
+
+        ScanAndDrawVisuals(scriptText);
 
         _state = InterpreterState.Running;
         ToggleButtons(true);
@@ -515,13 +517,13 @@ public partial class ScriptInterpreter : Node
         }
     }
 
-    private void UpdateGridPoints(Vector2 a, Vector2 b)
-    {
-        if (_grid == null) return;
-        Vector2[] pts = { a, b, Vector2.Zero };
-        Color[] cols = { Colors.Yellow, Colors.Orange, Colors.Transparent };
-        _grid.UpdatePoints(pts, cols);
-    }
+    //private void UpdateGridPoints(Vector2 a, Vector2 b)
+    //{
+    //    if (_grid == null) return;
+    //    Vector2[] pts = { a, b, Vector2.Zero };
+    //    Color[] cols = { Colors.Yellow, Colors.Orange, Colors.Transparent };
+    //    _grid.UpdatePoints(pts, cols);
+    //}
 
     private void ToggleButtons(bool isRunning)
     {
