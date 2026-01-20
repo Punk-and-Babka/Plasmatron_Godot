@@ -44,6 +44,9 @@ public partial class Burner : Node2D
     public int CyclesRemaining => _cyclesRemaining;
 
 
+    // Вектор ввода от экранных кнопок (UI)
+    public Vector2 InterfaceInputVector { get; set; } = Vector2.Zero;
+
     // ==========================================
     // НОВЫЕ ПАРАМЕТРЫ ВНЕШНЕГО ВИДА
     // ==========================================
@@ -167,9 +170,20 @@ public partial class Burner : Node2D
         // 2. РУЧНОЕ УПРАВЛЕНИЕ
         else if (!IsAutoSequenceActive)
         {
-            float inputX = Input.GetAxis("Burner_left", "Burner_right");
-            float inputY = Input.GetAxis("Burner_down", "Burner_up");
-            Vector2 inputDir = new Vector2(inputX, inputY).Normalized();
+            // 1. Читаем клавиатуру
+            float keyX = Input.GetAxis("Burner_left", "Burner_right");
+            float keyY = Input.GetAxis("Burner_down", "Burner_up");
+            Vector2 keyboardInput = new Vector2(keyX, keyY);
+
+            // 2. Суммируем с экранными кнопками
+            // Если нажата и клавиатура, и кнопка - берем то, что не ноль.
+            // Clamp нужен, чтобы сумма (1 + 1) не дала двойную скорость.
+            Vector2 combinedInput = keyboardInput + InterfaceInputVector;
+
+            // Ограничиваем длину вектора единицей (чтобы по диагонали не ехал быстрее)
+            if (combinedInput.Length() > 1) combinedInput = combinedInput.Normalized();
+
+            Vector2 inputDir = combinedInput;
 
             if (inputDir != Vector2.Zero)
             {

@@ -59,6 +59,12 @@ public partial class UIController : Control
     [Export] private Button _runScriptButton;    // Кнопка Старт (скрипта)
     [Export] private Button _stopScriptButton;   // Кнопка Стоп (скрипта)
     [Export] private ScriptInterpreter _interpreter; // Ссылка на узел логики
+
+    [ExportGroup("Стрелки (ArrowPad)")]
+    [Export] private Button _btnUp;
+    [Export] private Button _btnDown;
+    [Export] private Button _btnLeft;
+    [Export] private Button _btnRight;
     #endregion
 
     private SerialPort _serialPort;
@@ -169,6 +175,12 @@ public partial class UIController : Control
 
         if (_stopScriptButton != null)
             _stopScriptButton.Pressed += OnStopScriptPressed;
+
+        // Подключаем стрелки управления
+        SetupArrowButton(_btnUp, new Vector2(0, 1));  // Вверх (+Y в логике горелки)
+        SetupArrowButton(_btnDown, new Vector2(0, -1)); // Вниз
+        SetupArrowButton(_btnLeft, new Vector2(-1, 0)); // Влево
+        SetupArrowButton(_btnRight, new Vector2(1, 0)); // Вправо
     }
 
     public override void _Process(double delta)
@@ -350,6 +362,35 @@ public partial class UIController : Control
         _grid.UpdatePoints(currentPoints, _pointColors);
     }
 
+    // Вспомогательный метод для быстрой привязки
+    private void SetupArrowButton(Button btn, Vector2 direction)
+    {
+        if (btn == null) return;
+
+        // Когда нажали - добавляем направление
+        btn.ButtonDown += () => UpdateManualInput(direction);
+
+        // Когда отпустили - вычитаем направление (обнуляем)
+        btn.ButtonUp += () => UpdateManualInput(-direction);
+    }
+
+    // Текущий вектор нажатия экранных кнопок
+    private Vector2 _currentManualVector = Vector2.Zero;
+
+    private void UpdateManualInput(Vector2 change)
+    {
+        _currentManualVector += change;
+
+        // Защита от дребезга (иногда float может стать 0.00001)
+        if (Mathf.Abs(_currentManualVector.X) < 0.1f) _currentManualVector.X = 0;
+        if (Mathf.Abs(_currentManualVector.Y) < 0.1f) _currentManualVector.Y = 0;
+
+        // Передаем в горелку
+        if (_burner != null)
+        {
+            _burner.InterfaceInputVector = _currentManualVector;
+        }
+    }
     private void OnRunScriptPressed()
     {
         if (_interpreter == null)
@@ -468,12 +509,10 @@ public partial class UIController : Control
             UpdateStatus($"Циклов осталось: {_burner.CyclesRemaining}");
     }
 
-    // --- ИЗМЕНЕНИЕ: При старте читаем из полей, а не из сохраненного массива ---
     private void OnStartSequencePressed()
     {
         Vector2[] points = GetPointsFromInputs();
 
-        // Опционально: обновить визуальные точки на сетке при старте
         _grid?.UpdatePoints(points, _pointColors);
 
         _burner?.StartAutoSequence(points, (int)_cyclesInput.Value);

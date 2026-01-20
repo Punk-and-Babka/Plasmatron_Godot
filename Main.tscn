@@ -11,7 +11,7 @@
 [ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="9_kjvhd"]
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
 
-[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter")]
+[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter", "_btnUp", "_btnDown", "_btnLeft", "_btnRight")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -50,6 +50,10 @@ _scriptInput = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/S
 _runScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button")
 _stopScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button2")
 _interpreter = NodePath("ScriptInterpreter")
+_btnUp = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Up")
+_btnDown = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Down")
+_btnLeft = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Left")
+_btnRight = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad/Btn_Right")
 
 [node name="Background" type="Panel" parent="."]
 layout_mode = 1
