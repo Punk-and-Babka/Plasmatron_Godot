@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://bl5bb782ddrgv" path="res://UIController.cs" id="1_wkp8b"]
 [ext_resource type="PackedScene" uid="uid://f8ijx82pgt4v" path="res://ui/about_window.tscn" id="2_20pc6"]
 [ext_resource type="PackedScene" uid="uid://blx66uippcuma" path="res://PortSelectionWindow.tscn" id="3_5vvyt"]
-[ext_resource type="FontFile" uid="uid://dcriwe0rbrl4e" path="res://fonts/times.ttf" id="5_c2ibq"]
+[ext_resource type="PackedScene" uid="uid://d2whrgrjhvl4g" path="res://CalculationWindow.tscn" id="5_20pc6"]
 [ext_resource type="Script" uid="uid://cxumsvhahytmn" path="res://SpeedInputHandler.cs" id="6_j4qnp"]
 [ext_resource type="Script" uid="uid://cr7t1fvsdfttu" path="res://CoordinateGrid.cs" id="7_fpfj3"]
 [ext_resource type="FontFile" uid="uid://1el8nihyng7" path="res://fonts/JetBrainsMono-Medium.ttf" id="8_20pc6"]
@@ -35,6 +35,7 @@ settingsMenu = NodePath("MainVerticalLayout/MainMenuBar/SettingsMenu")
 helpMenu = NodePath("MainVerticalLayout/MainMenuBar/Help")
 _aboutWindowScene = ExtResource("2_20pc6")
 _portWindowScene = ExtResource("3_5vvyt")
+_calcWindowScene = ExtResource("5_20pc6")
 _startSequenceButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/StartSequenceButton")
 _cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/CyclesSpinBox")
 _statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/StatusLabel")
@@ -419,7 +420,6 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_vertical = 8
 focus_mode = 1
-theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Экстренная остановка"
 
 [node name="ScriptInterpreter" type="Node" parent="." node_paths=PackedStringArray("_scriptInput", "_runButton", "_stopButton", "_resetButton", "_statusLabel", "_grid", "TargetBurner")]

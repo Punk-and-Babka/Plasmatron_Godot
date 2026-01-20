@@ -30,6 +30,8 @@ public partial class UIController : Control
     [ExportGroup("Окна")]
     [Export] private PackedScene _aboutWindowScene;
     [Export] private PackedScene _portWindowScene;
+    [Export] private PackedScene _calcWindowScene; // Ссылка на сцену калькулятора
+
 
     [ExportGroup("Управление")]
     [Export] private Button _startSequenceButton;
@@ -69,6 +71,7 @@ public partial class UIController : Control
 
     private SerialPort _serialPort;
     private PortSelectionWindow _portWindow;
+    private CalculationWindow _calcWindowInstance;
 
     private Vector2 _lastPosition;
     private float _lastSpeed;
@@ -276,6 +279,8 @@ public partial class UIController : Control
             settingsMenu.AddItem("Расчет скорости (Диаметр)", 1);
             settingsMenu.AddItem("Настройки ускорения", 2);
             settingsMenu.AddItem("Добавить деталь", 3);
+
+            // Безопасное переподключение сигнала
             if (settingsMenu.IsConnected(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnSettingsMenuIdPressed))))
                 settingsMenu.Disconnect(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnSettingsMenuIdPressed)));
             settingsMenu.IdPressed += OnSettingsMenuIdPressed;
@@ -287,6 +292,7 @@ public partial class UIController : Control
             helpMenu.AddItem("Инструкция к скриптам", 0);
             helpMenu.AddSeparator();
             helpMenu.AddItem("О программе", 1);
+
             if (helpMenu.IsConnected(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnHelpMenuIdPressed))))
                 helpMenu.Disconnect(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnHelpMenuIdPressed)));
             helpMenu.IdPressed += OnHelpMenuIdPressed;
@@ -298,7 +304,7 @@ public partial class UIController : Control
         switch (id)
         {
             case 0: ShowPortSelectionWindow(); break;
-            case 1: GD.Print("TODO: Calc"); break;
+            case 1: ShowCalculator(); break; // <--- ИЗМЕНЕНИЕ: Запуск калькулятора
             case 2: GD.Print("TODO: Accel"); break;
             case 3: GD.Print("TODO: Piece"); break;
         }
@@ -312,6 +318,43 @@ public partial class UIController : Control
             case 1: ShowAboutWindow(); break;
         }
     }
+
+    // --- ЛОГИКА КАЛЬКУЛЯТОРА ---
+    private void ShowCalculator()
+    {
+        // Если окно уже создано и открыто - просто показываем его
+        if (_calcWindowInstance != null && GodotObject.IsInstanceValid(_calcWindowInstance))
+        {
+            _calcWindowInstance.PopupCentered();
+            return;
+        }
+
+        // Если сцену забыли назначить в инспекторе
+        if (_calcWindowScene == null)
+        {
+            ShowError("Ошибка: Сцена калькулятора не назначена в UIController!");
+            return;
+        }
+
+        // Создаем новое окно
+        _calcWindowInstance = _calcWindowScene.Instantiate<CalculationWindow>();
+        AddChild(_calcWindowInstance);
+
+        // Подписываемся на сигнал "Применить скорость"
+        _calcWindowInstance.SpeedApplied += OnCalculatorSpeedApplied;
+
+        _calcWindowInstance.PopupCentered();
+    }
+
+    private void OnCalculatorSpeedApplied(float speed)
+    {
+        GD.Print($"[Calc] Применена скорость: {speed}");
+
+        // Используем твой существующий метод для применения скорости
+        // Он сам обновит слайдер, отправит команду в порт и подсветит поле
+        ApplySpeedChange(speed);
+    }
+    // ---------------------------
 
     private void ShowPortSelectionWindow()
     {
