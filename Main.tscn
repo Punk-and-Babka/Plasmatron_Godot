@@ -338,24 +338,51 @@ text = "Ручное управление"
 
 [node name="ArrowPad" type="GridContainer" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
 layout_mode = 2
+theme_override_constants/h_separation = 5
+theme_override_constants/v_separation = 5
 columns = 3
 
-[node name="Btn_Empty1" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+[node name="Empty1" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 layout_mode = 2
 
 [node name="Btn_Up" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "▲"
 
-[node name="Btn_Empty2" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+[node name="Empty2" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 layout_mode = 2
 
 [node name="Btn_Left" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "◀"
+
+[node name="Btn_Home" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "●"
+icon_alignment = 1
+
+[node name="Btn_Right" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "▶"
+
+[node name="Empty3" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 layout_mode = 2
 
 [node name="Btn_Down" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "▼"
 
-[node name="Btn_Right" type="Button" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
+[node name="Empty4" type="Control" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ArrowPad"]
 layout_mode = 2
 
 [node name="HSeparator2" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
@@ -369,7 +396,7 @@ layout_mode = 2
 text = "Статус"
 
 [node name="ScriptInput" type="CodeEdit" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup"]
-custom_minimum_size = Vector2(0, 400)
+custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
 size_flags_vertical = 3
 
