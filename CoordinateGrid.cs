@@ -99,12 +99,49 @@ public partial class CoordinateGrid : Node2D
 
         Font fontToUse = LabelFont ?? ThemeDB.FallbackFont;
 
+        // 1. Сетка
         DrawGridLines(area, fontToUse);
 
-        // НОВОЕ: Рисуем деталь ПЕРЕД точками траектории, чтобы траектория была поверх
+        // 2. Деталь (синий прямоугольник)
         DrawPiece(area);
 
+        // 3. НОВОЕ: Траектория (линии между точками)
+        DrawTrajectory(area);
+
+        // 4. Сами точки (крестики/маркеры)
         DrawPointMarkers(area, fontToUse);
+    }
+
+    // --- НОВЫЙ МЕТОД: Рисует линии от точки к точке ---
+    private void DrawTrajectory(Rect2 area)
+    {
+        if (_points == null || _points.Count < 2) return;
+
+        float scaleX = PixelsPerMM_X;
+        float scaleY = PixelsPerMM_Y;
+
+        // Проходим по списку и соединяем i с i+1
+        for (int i = 0; i < _points.Count - 1; i++)
+        {
+            // Переводим мм в пиксели для точки А
+            float x1 = area.Position.X + _points[i].X * scaleX;
+            float y1 = area.Position.Y + (RealWorldHeightMM - _points[i].Y) * scaleY;
+            Vector2 p1 = new Vector2(x1, y1);
+
+            // Переводим мм в пиксели для точки Б
+            float x2 = area.Position.X + _points[i + 1].X * scaleX;
+            float y2 = area.Position.Y + (RealWorldHeightMM - _points[i + 1].Y) * scaleY;
+            Vector2 p2 = new Vector2(x2, y2);
+
+            // Рисуем жирную линию
+            // Цвет берем от точки назначения, или дефолтный желтый
+            Color lineColor = (i + 1 < _pointColors.Count) ? _pointColors[i + 1] : Colors.Yellow;
+
+            // Делаем линию полупрозрачной, чтобы не перекрывала всё
+            lineColor.A = 0.6f;
+
+            DrawLine(p1, p2, lineColor, 2.0f, true); // Толщина 2 пикселя
+        }
     }
 
     // --- НОВЫЙ МЕТОД: Логика отрисовки детали ---

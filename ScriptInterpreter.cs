@@ -320,14 +320,17 @@ public partial class ScriptInterpreter : Node
             _currentCycleStep++;
             int totalSteps = _cycleCount * 2;
 
-            if (_currentCycleStep >= totalSteps)
+            if (_currentCycleStep > totalSteps)
             {
                 GD.Print($"Цикл завершен ({_cycleCount} итераций)");
                 _isLargeCycle = false;
                 return;
             }
 
+            // Если шаг нечетный (1, 3...) -> Едем в B
+            // Если шаг четный (2, 4...) -> Едем обратно в A
             Vector2 target = (_currentCycleStep % 2 != 0) ? _cyclePointB : _cyclePointA;
+
             string moveCmd = $"GO({target.X.ToString(CultureInfo.InvariantCulture)}, {target.Y.ToString(CultureInfo.InvariantCulture)})";
             PushPriorityCommand(moveCmd);
         }

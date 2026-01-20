@@ -694,13 +694,19 @@ public partial class UIController : Control
                     float x2 = ParseFloatSafe(args[2]);
                     float y2 = ParseFloatSafe(args[3]);
 
+                    // 1. Старт
                     points.Add(new Vector2(x1, y1));
-                    colors.Add(Colors.Yellow); // Start (Желтый)
+                    colors.Add(Colors.Yellow);
 
+                    // 2. Конец
                     points.Add(new Vector2(x2, y2));
-                    colors.Add(Colors.Orange); // End (Оранжевый)
+                    colors.Add(Colors.Orange);
+
+                    // 3. ИСПРАВЛЕНИЕ: Визуально замыкаем цикл (возврат в А)
+                    points.Add(new Vector2(x1, y1));
+                    colors.Add(Colors.Yellow);
                 }
-                // Вариант Б: X1, X2, Count (3 аргумента, Y=0)
+                // Вариант Б: X1, X2, Count (Y=0)
                 else if (args.Length >= 3)
                 {
                     float x1 = ParseFloatSafe(args[0]);
@@ -711,6 +717,10 @@ public partial class UIController : Control
 
                     points.Add(new Vector2(x2, 0));
                     colors.Add(Colors.Orange);
+
+                    // 3. ИСПРАВЛЕНИЕ: Визуально замыкаем цикл
+                    points.Add(new Vector2(x1, 0));
+                    colors.Add(Colors.Yellow);
                 }
             }
         }
