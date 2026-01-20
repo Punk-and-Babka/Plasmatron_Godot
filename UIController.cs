@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO.Ports;
 using System.Text.RegularExpressions;
@@ -9,7 +10,7 @@ public partial class UIController : Control
     #region Экспорты
     [ExportGroup("Ссылки")]
     [Export] private CoordinateGrid _grid;
-    [Export] private LineEdit _positionInput;
+    [Export] private LineEdit _positionInput; // Поле "Переместить"
     [Export] private Button _moveButton;
     [Export] private Button _stopButton;
     [Export] private Burner _burner;
@@ -40,13 +41,17 @@ public partial class UIController : Control
     [Export] private SpinBox _pauseInput;
     [Export] private Button _pauseButton;
 
-    [ExportGroup("Точки")]
-    [Export] private Button _savePoint0Button;
-    [Export] private Button _savePoint1Button;
-    [Export] private Button _savePoint2Button;
-    [Export] private Label _point0Label;
-    [Export] private Label _point1Label;
-    [Export] private Label _point2Label;
+    // --- ИЗМЕНЕНИЕ: Новая группа для ручного ввода точек ---
+    [ExportGroup("Точки (Inputs)")]
+    [Export] private LineEdit _inputPoint0;
+    [Export] private LineEdit _inputPoint1;
+    [Export] private LineEdit _inputPoint2;
+
+    [ExportGroup("Кнопки захвата")]
+    [Export] private Button _btnGetPoint0;
+    [Export] private Button _btnGetPoint1;
+    [Export] private Button _btnGetPoint2;
+
     [Export] private Color[] _pointColors = { Colors.Green, Colors.Red, Colors.Blue };
 
     [ExportGroup("Скриптинг")]
@@ -59,7 +64,6 @@ public partial class UIController : Control
     private SerialPort _serialPort;
     private PortSelectionWindow _portWindow;
 
-    private Vector2[] _savedPoints = new Vector2[3];
     private Vector2 _lastPosition;
     private float _lastSpeed;
 
@@ -144,9 +148,14 @@ public partial class UIController : Control
         _moveButton.Pressed += OnMoveButtonPressed;
         _stopButton.Pressed += OnStopButtonPressed;
 
-        _savePoint0Button.Pressed += () => SavePoint(0);
-        _savePoint1Button.Pressed += () => SavePoint(1);
-        _savePoint2Button.Pressed += () => SavePoint(2);
+        if (_inputPoint0 != null) _inputPoint0.TextChanged += (t) => UpdateGridVisuals();
+        if (_inputPoint1 != null) _inputPoint1.TextChanged += (t) => UpdateGridVisuals();
+        if (_inputPoint2 != null) _inputPoint2.TextChanged += (t) => UpdateGridVisuals();
+
+        // --- ИЗМЕНЕНИЕ: Подключаем кнопки захвата (GET) ---
+        if (_btnGetPoint0 != null) _btnGetPoint0.Pressed += () => SetInputFromBurner(_inputPoint0);
+        if (_btnGetPoint1 != null) _btnGetPoint1.Pressed += () => SetInputFromBurner(_inputPoint1);
+        if (_btnGetPoint2 != null) _btnGetPoint2.Pressed += () => SetInputFromBurner(_inputPoint2);
 
         _startSequenceButton.Pressed += OnStartSequencePressed;
         _emergencyStopButton.Pressed += OnEmergencyStopPressed;
@@ -179,7 +188,6 @@ public partial class UIController : Control
         }
     }
 
-    // --- ИЗМЕНЕНИЕ: Отображение X и Y ---
     private void UpdateUIDisplay()
     {
         if (_lblPositionValue != null)
@@ -333,6 +341,15 @@ public partial class UIController : Control
 
     #region Movement & Commands
 
+    // Метод для мгновенного обновления визуала
+    private void UpdateGridVisuals()
+    {
+        if (_grid == null) return;
+        // Берем текущие значения из полей и сразу рисуем
+        Vector2[] currentPoints = GetPointsFromInputs();
+        _grid.UpdatePoints(currentPoints, _pointColors);
+    }
+
     private void OnRunScriptPressed()
     {
         if (_interpreter == null)
@@ -347,7 +364,6 @@ public partial class UIController : Control
             return;
         }
 
-        // Запускаем текст из окна CodeEdit
         _interpreter.RunScript(_scriptInput.Text);
         UpdateStatus("Выполнение скрипта...");
     }
@@ -357,6 +373,7 @@ public partial class UIController : Control
         _interpreter?.StopScript();
         UpdateStatus("Скрипт остановлен.");
     }
+
     public void SendCommand(string command)
     {
         if (_portWindow?.UseMockPort != true && _serialPort?.IsOpen == true)
@@ -379,31 +396,19 @@ public partial class UIController : Control
 
     private void OnMoveButtonPressed()
     {
-        string input = _positionInput.Text.Replace(" ", "");
-        float targetX = 0;
-        float targetY = 0;
+        // Используем универсальный парсер для одиночного движения
+        Vector2 target = ParsePoint(_positionInput.Text);
 
-        string[] parts = input.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+        // Если Y не задан (0), можно попробовать использовать текущий Y, 
+        // но ParsePoint вернет 0, если его нет. 
+        // Добавим проверку: если в строке не было разделителя, оставляем Y текущим.
+        if (!_positionInput.Text.Contains(";") && !_positionInput.Text.Contains(","))
+        {
+            float currentY = _burner != null ? _burner.PositionMM.Y : 0;
+            target.Y = currentY;
+        }
 
-        if (parts.Length == 2)
-        {
-            if (float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out targetX) &&
-                float.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out targetY))
-            {
-                _burner?.MoveToPosition(new Vector2(targetX, targetY));
-                return;
-            }
-        }
-        else if (parts.Length == 1)
-        {
-            if (float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out targetX))
-            {
-                float currentY = _burner != null ? _burner.PositionMM.Y : 0;
-                _burner?.MoveToPosition(new Vector2(targetX, currentY));
-                return;
-            }
-        }
-        ShowError("Некорректный формат позиции.\nИспользуйте 'X' или 'X;Y'");
+        _burner?.MoveToPosition(target);
     }
 
     private void OnStopButtonPressed() => _burner?.StopAutoMovement();
@@ -414,16 +419,48 @@ public partial class UIController : Control
         SendCommand("s");
     }
 
-    // --- ИЗМЕНЕНИЕ: Отображение X и Y в сохраненных точках ---
-    private void SavePoint(int i)
-    {
-        _savedPoints[i] = _lastPosition;
-        Label l = i switch { 0 => _point0Label, 1 => _point1Label, 2 => _point2Label, _ => null };
-        if (l != null)
-            l.Text = $"{_savedPoints[i].X:F0}; {_savedPoints[i].Y:F0}"; // Формат "100; 50"
+    // --- ИЗМЕНЕНИЕ: Новые методы для работы с точками ---
 
-        _grid?.UpdatePoints(_savedPoints, _pointColors);
+    // 1. Метод захвата позиции (вызывается кнопкой GET)
+    private void SetInputFromBurner(LineEdit targetInput)
+    {
+        if (_burner == null || targetInput == null) return;
+        Vector2 pos = _burner.PositionMM;
+        targetInput.Text = $"{pos.X:F0}; {pos.Y:F0}";
+
+        UpdateGridVisuals();
     }
+
+    // 2. Метод чтения точек из полей ввода
+    public Vector2[] GetPointsFromInputs()
+    {
+        List<Vector2> points = new List<Vector2>();
+
+        if (_inputPoint0 != null) points.Add(ParsePoint(_inputPoint0.Text));
+        if (_inputPoint1 != null) points.Add(ParsePoint(_inputPoint1.Text));
+        if (_inputPoint2 != null) points.Add(ParsePoint(_inputPoint2.Text));
+
+        return points.ToArray();
+    }
+
+    // 3. Универсальный парсер текста
+    private Vector2 ParsePoint(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return Vector2.Zero;
+
+        // Удаляем лишнее, разделяем по ; , или пробелу
+        string[] parts = text.Split(new char[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+        float x = 0;
+        float y = 0;
+
+        if (parts.Length > 0) float.TryParse(parts[0].Replace('.', ','), NumberStyles.Any, CultureInfo.InvariantCulture, out x);
+        if (parts.Length > 1) float.TryParse(parts[1].Replace('.', ','), NumberStyles.Any, CultureInfo.InvariantCulture, out y);
+
+        return new Vector2(x, y);
+    }
+
+    // ---------------------------------------------------
 
     private void OnPositionUpdated(Vector2 position)
     {
@@ -431,7 +468,17 @@ public partial class UIController : Control
             UpdateStatus($"Циклов осталось: {_burner.CyclesRemaining}");
     }
 
-    private void OnStartSequencePressed() { _burner?.StartAutoSequence(_savedPoints, (int)_cyclesInput.Value); }
+    // --- ИЗМЕНЕНИЕ: При старте читаем из полей, а не из сохраненного массива ---
+    private void OnStartSequencePressed()
+    {
+        Vector2[] points = GetPointsFromInputs();
+
+        // Опционально: обновить визуальные точки на сетке при старте
+        _grid?.UpdatePoints(points, _pointColors);
+
+        _burner?.StartAutoSequence(points, (int)_cyclesInput.Value);
+    }
+
     private void OnPauseChanged(double v) { if (_burner != null) _burner.PauseDuration = (float)v; }
     private void OnPauseButtonPressed()
     {

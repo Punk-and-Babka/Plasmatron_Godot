@@ -11,7 +11,7 @@
 [ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="9_kjvhd"]
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
 
-[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_savePoint0Button", "_savePoint1Button", "_savePoint2Button", "_point0Label", "_point1Label", "_point2Label", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter")]
+[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -40,12 +40,12 @@ _statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBa
 _emergencyStopButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/EmergencyStopButton")
 _pauseInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseInput")
 _pauseButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseButton")
-_savePoint0Button = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Point0Button")
-_savePoint1Button = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Point1Button")
-_savePoint2Button = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Point2Button")
-_point0Label = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Point0")
-_point1Label = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Point1")
-_point2Label = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Point2")
+_inputPoint0 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Input_P0")
+_inputPoint1 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Input_P1")
+_inputPoint2 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Input_P2")
+_btnGetPoint0 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Btn_Get0")
+_btnGetPoint1 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Btn_Get1")
+_btnGetPoint2 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Btn_Get2")
 _scriptInput = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptInput")
 _runScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button")
 _stopScriptButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/ScriptingGroup/ScriptButtons/Button2")
@@ -149,9 +149,9 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
-columns = 2
+columns = 3
 
-[node name="Point0" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+[node name="Lbl_Name0" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -159,14 +159,20 @@ theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 0"
 horizontal_alignment = 1
 
-[node name="Point0Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+[node name="Input_P0" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "X; Y"
+alignment = 1
+
+[node name="Btn_Get0" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 0"
 
-[node name="Point1" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+[node name="Lbl_Name1" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -174,14 +180,20 @@ theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 1"
 horizontal_alignment = 1
 
-[node name="Point1Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+[node name="Input_P1" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "X; Y"
+alignment = 1
+
+[node name="Btn_Get1" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
 theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 1"
 
-[node name="Point2" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+[node name="Lbl_Name2" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -189,7 +201,13 @@ theme_override_fonts/font = ExtResource("5_c2ibq")
 text = "Точка 2"
 horizontal_alignment = 1
 
-[node name="Point2Button" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+[node name="Input_P2" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "X; Y"
+alignment = 1
+
+[node name="Btn_Get2" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 1
