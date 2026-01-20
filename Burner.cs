@@ -43,13 +43,22 @@ public partial class Burner : Node2D
     public bool IsAutoSequenceActive => _isAutoSequenceActive;
     public int CyclesRemaining => _cyclesRemaining;
 
+
+    // ==========================================
+    // НОВЫЕ ПАРАМЕТРЫ ВНЕШНЕГО ВИДА
+    // ==========================================
     // region ПАРАМЕТРЫ
     [ExportGroup("Размеры (мм)")]
     [Export] public float RealWidthMM { get; set; } = 100f;
     [Export] public float RealHeightMM { get; set; } = 72f;
 
     [ExportGroup("Внешний вид")]
-    [Export] public Color BurnerColor { get; set; } = new Color(1, 0.5f, 0, 0.8f);
+    [Export] public Color BodyColor { get; set; } = new Color(0.2f, 0.2f, 0.2f, 0.9f); // Темно-серый корпус
+    [Export] public Color NozzleColor { get; set; } = new Color(1, 0.6f, 0, 1f); // Оранжевое сопло
+    [Export] public Color TargetPointColor { get; set; } = new Color(0, 1, 1, 1f); // Голубой "лазер" (Cyan)
+
+    [Export(PropertyHint.Range, "-100, 100")]
+    public Vector2 VisualOffsetMM { get; set; } = new Vector2(0, 0); // Смещение картинки относительно точки
 
     [ExportGroup("Движение")]
     [Export] public float MaxSpeedMM { get; set; } = 100f;
@@ -59,6 +68,7 @@ public partial class Burner : Node2D
     [ExportGroup("Связи")]
     [Export] private CoordinateGrid _grid;
     // endregion
+    // ==========================================
 
     [Export] public float PauseDuration { get; set; } = 3.0f;
     private float _pauseTimer;
@@ -76,8 +86,11 @@ public partial class Burner : Node2D
         get => _positionMM;
         private set
         {
-            float x = Mathf.Clamp(value.X, 0, MaxPositionMM.X);
-            float y = Mathf.Clamp(value.Y, 0, MaxPositionMM.Y);
+            // Здесь мы не ограничиваем MaxPositionMM жестко для позиции,
+            // чтобы логика не ломалась, если горелка выедет чуть за край.
+            // Но clamp полезен для безопасности.
+            float x = Mathf.Clamp(value.X, 0, _grid?.RealWorldWidthMM ?? 1000);
+            float y = Mathf.Clamp(value.Y, 0, _grid?.RealWorldHeightMM ?? 1000);
             Vector2 clamped = new Vector2(x, y);
 
             if (!_positionMM.IsEqualApprox(clamped))
@@ -154,51 +167,40 @@ public partial class Burner : Node2D
         // 2. РУЧНОЕ УПРАВЛЕНИЕ
         else if (!IsAutoSequenceActive)
         {
-            // Получаем ввод по X и Y
             float inputX = Input.GetAxis("Burner_left", "Burner_right");
-
-            // В Godot Y вниз положителен для 2D, но в нашем глоб. смысле "Вверх" = +Y (высота)
-            // Input.GetAxis("down", "up") вернет 1 если up, -1 если down.
             float inputY = Input.GetAxis("Burner_down", "Burner_up");
-
             Vector2 inputDir = new Vector2(inputX, inputY).Normalized();
 
             if (inputDir != Vector2.Zero)
             {
                 targetVelocity = inputDir * MaxSpeedMM;
                 currentRate = _accelerationRate;
-
-                // Отправляем команду при ручном вводе
-                // (Отправляем только если реально разгоняемся, чтобы не спамить)
                 if (_currentVelocity.Length() > 1.0f)
                 {
-                    SendMovementCommand(PositionMM + inputDir * 100f); // "Виртуальная цель" впереди
+                    SendMovementCommand(PositionMM + inputDir * 100f);
                 }
             }
             else
             {
                 targetVelocity = Vector2.Zero;
                 currentRate = _decelerationRate;
-                // Если остановились и не в паузе - шлем стоп (один раз обработается в StopAutoMovement или по таймеру)
             }
         }
 
-        // Применяем инерцию
         _currentVelocity = _currentVelocity.MoveToward(targetVelocity, currentRate * delta);
         PositionMM += _currentVelocity * delta;
 
-        // Ручная отправка STOP если скорость упала до 0 после движения
         if (!IsMovingToTarget && !IsAutoSequenceActive && _currentVelocity == Vector2.Zero && targetVelocity == Vector2.Zero)
         {
-            // Здесь можно добавить логику отправки 's' один раз, если нужно
         }
     }
 
     // --- УПРАВЛЕНИЕ ---
     public void MoveToPosition(Vector2 target)
     {
-        float x = Mathf.Clamp(target.X, 0, MaxPositionMM.X);
-        float y = Mathf.Clamp(target.Y, 0, MaxPositionMM.Y);
+        // Разрешаем ехать в любую точку в пределах сетки
+        float x = Mathf.Clamp(target.X, 0, _grid?.RealWorldWidthMM ?? 1000);
+        float y = Mathf.Clamp(target.Y, 0, _grid?.RealWorldHeightMM ?? 1000);
         TargetPosition = new Vector2(x, y);
 
         if (!_isManualPaused)
@@ -222,29 +224,16 @@ public partial class Burner : Node2D
     private void SendMovementCommand(Vector2 target)
     {
         if (_uiController == null) return;
-
-        // Вычисляем разницу
         Vector2 diff = target - PositionMM;
-
-        // Определяем доминирующую ось
         string cmd = "";
-
-        // Если движение по X больше, чем по Y
-        if (Mathf.Abs(diff.X) > Mathf.Abs(diff.Y))
-        {
-            cmd = diff.X > 0 ? "f" : "b";
-        }
-        else
-        {
-            cmd = diff.Y > 0 ? "u" : "d"; // u - Up (Вверх), d - Down (Вниз)
-        }
-
+        if (Mathf.Abs(diff.X) > Mathf.Abs(diff.Y)) cmd = diff.X > 0 ? "f" : "b";
+        else cmd = diff.Y > 0 ? "u" : "d";
         _uiController.SendCommand(cmd);
     }
 
     private void SendStopCommand() => _uiController?.SendCommand("s");
 
-    // --- АВТОМАТИЗАЦИЯ И ПРОЧЕЕ (Без изменений логики) ---
+    // --- АВТОМАТИЗАЦИЯ ---
     public void StartAutoSequence(Vector2[] points, int cycles)
     {
         ResetSequenceState();
@@ -367,25 +356,60 @@ public partial class Burner : Node2D
         SetMovementSpeed(100f);
     }
 
-    // --- ОТРИСОВКА ---
+    // ==========================================
+    // ЛОГИКА ОТРИСОВКИ
+    // ==========================================
     public override void _Draw()
     {
         if (_grid?.GridArea.Size == Vector2.Zero) return;
 
-        Vector2 sizePx = new Vector2(RealWidthMM * _grid.PixelsPerMM_X, RealHeightMM * _grid.PixelsPerMM_Y);
-        float x = _grid.GridArea.Position.X + (PositionMM.X * _grid.PixelsPerMM_X) - sizePx.X / 2;
-        float y = _grid.GridArea.Position.Y + (_grid.RealWorldHeightMM - PositionMM.Y) * _grid.PixelsPerMM_Y - sizePx.Y;
-        Vector2 pos = new Vector2(x, y);
+        // --- 1. ВЫЧИСЛЕНИЯ КООРДИНАТ ---
+        // Точка координат (ИСТИНА)
+        float tipX = _grid.GridArea.Position.X + (PositionMM.X * _grid.PixelsPerMM_X);
+        float tipY = _grid.GridArea.Position.Y + (_grid.RealWorldHeightMM - PositionMM.Y) * _grid.PixelsPerMM_Y;
+        Vector2 tipScreenPos = new Vector2(tipX, tipY);
 
-        DrawRect(new Rect2(pos, sizePx), BurnerColor, true);
-        DrawRect(new Rect2(pos, sizePx), Colors.White, false, 2);
+        // Размеры и положение корпуса
+        Vector2 bodySizePx = new Vector2(RealWidthMM * _grid.PixelsPerMM_X, RealHeightMM * _grid.PixelsPerMM_Y);
+        Vector2 offsetPx = new Vector2(VisualOffsetMM.X * _grid.PixelsPerMM_X, -VisualOffsetMM.Y * _grid.PixelsPerMM_Y);
 
-        float flameH = sizePx.Y * 0.7f;
-        Vector2[] flame = {
-            pos + new Vector2(sizePx.X/2, sizePx.Y + flameH),
-            pos + new Vector2(sizePx.X/4, sizePx.Y),
-            pos + new Vector2(sizePx.X*0.75f, sizePx.Y)
-        };
-        DrawColoredPolygon(flame, new Color(1, 0, 0, 0.6f));
+        Vector2 bodyTopLeft = new Vector2(
+            tipScreenPos.X - (bodySizePx.X / 2) + offsetPx.X,
+            tipScreenPos.Y - bodySizePx.Y + offsetPx.Y
+        );
+        Rect2 bodyRect = new Rect2(bodyTopLeft, bodySizePx);
+
+
+        // --- 2. ОТРИСОВКА СЛОЕВ (СНИЗУ ВВЕРХ) ---
+
+        // СЛОЙ 1 (Самый нижний): Механическое крепление (серая линия)
+        // Рисуем от центра корпуса к точке.
+        DrawLine(bodyRect.GetCenter(), tipScreenPos, Colors.Gray, 2f);
+
+        // СЛОЙ 2 (Средний): КАРЕТКА (Корпус)
+        DrawRect(bodyRect, BodyColor, true); // Темная заливка
+        DrawRect(bodyRect, new Color(0.5f, 0.5f, 0.5f), false, 1); // Тонкая рамка
+
+        // СЛОЙ 3 (Верхний): МИШЕНЬ (Лазерный прицел) - Циан
+        // Мы перенесли этот блок вниз, чтобы он рисовался ПОВЕРХ корпуса.
+
+        // Увеличили размер с 15f до 30f (можно настроить под себя)
+        float crossSize = 30f;
+        // Рисуем длинные тонкие линии
+        DrawLine(tipScreenPos - new Vector2(crossSize, 0), tipScreenPos + new Vector2(crossSize, 0), TargetPointColor, 1f);
+        DrawLine(tipScreenPos - new Vector2(0, crossSize), tipScreenPos + new Vector2(0, crossSize), TargetPointColor, 1f);
+
+        // СЛОЙ 4 (Самый верхний): ИНДИКАЦИЯ РАБОТЫ (Точка в центре)
+        if (IsAutoSequenceActive || (IsMovingToTarget && CurrentSpeedScalar > 10))
+        {
+            // Красная точка (плазма) + свечение
+            DrawCircle(tipScreenPos, 8f, new Color(1, 0, 0, 0.3f)); // Ореол
+            DrawCircle(tipScreenPos, 4f, new Color(1, 0.2f, 0.2f, 1f)); // Ядро
+        }
+        else
+        {
+            // В покое - маленькая точка цвета прицела в самом центре перекрестия
+            DrawCircle(tipScreenPos, 3f, TargetPointColor);
+        }
     }
 }
