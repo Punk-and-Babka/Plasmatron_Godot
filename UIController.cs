@@ -35,6 +35,7 @@ public partial class UIController : Control
     [Export] private PackedScene _pieceWindowScene;
     [Export] private PackedScene _accelWindowScene;
     [Export] private PackedScene _scriptHelpScene;
+    [Export] private CameraClient _cameraClient;
 
 
     [ExportGroup("Управление")]
@@ -325,7 +326,19 @@ public partial class UIController : Control
             settingsMenu.AddItem("Настройки ускорения", 2);
             settingsMenu.AddItem("Добавить деталь", 3);
 
-            // Безопасное переподключение сигнала
+            settingsMenu.AddSeparator();
+
+            // ID 4: Добавляем пункт с ГАЛОЧКОЙ (CheckItem)
+            settingsMenu.AddCheckItem("Камера", 4);
+
+            // Сразу выставляем галочку, если камера стоит на AutoConnect
+            if (_cameraClient != null)
+            {
+                int idx = settingsMenu.GetItemIndex(4); // Получаем индекс пункта по ID
+                settingsMenu.SetItemChecked(idx, _cameraClient.IsActive);
+            }
+
+            // ... подключение сигнала ...
             if (settingsMenu.IsConnected(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnSettingsMenuIdPressed))))
                 settingsMenu.Disconnect(PopupMenu.SignalName.IdPressed, new Callable(this, nameof(OnSettingsMenuIdPressed)));
             settingsMenu.IdPressed += OnSettingsMenuIdPressed;
@@ -361,7 +374,26 @@ public partial class UIController : Control
             case 1: ShowCalculator(); break;
             case 2: ShowAccelWindow(); break;
             case 3: ShowPieceWindow(); break;
+            case 4: ToggleCameraState(); break;
         }
+    }
+    private void ToggleCameraState()
+    {
+        if (_cameraClient == null)
+        {
+            ShowError("Камера не привязана в UIController!");
+            return;
+        }
+
+        // 1. Переключаем физическое состояние камеры
+        _cameraClient.Toggle();
+
+        // 2. Обновляем галочку в меню
+        // Нам нужно найти индекс пункта с ID=4
+        int itemIndex = settingsMenu.GetItemIndex(4);
+
+        // Ставим галочку в зависимости от того, включилась камера или выключилась
+        settingsMenu.SetItemChecked(itemIndex, _cameraClient.IsActive);
     }
 
     private void OnHelpMenuIdPressed(long id)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://cwwl6wahc6xgq"]
+[gd_scene load_steps=16 format=3 uid="uid://cwwl6wahc6xgq"]
 
 [ext_resource type="Theme" uid="uid://6ev0iiyyr54k" path="res://plasma_theme.tres" id="1_20pc6"]
 [ext_resource type="Script" uid="uid://bl5bb782ddrgv" path="res://UIController.cs" id="1_wkp8b"]
@@ -14,8 +14,9 @@
 [ext_resource type="Script" uid="uid://b28jyihhsrv4g" path="res://Burner.cs" id="8_sc1dx"]
 [ext_resource type="Script" uid="uid://ds28waifh60dv" path="res://ScriptInterpreter.cs" id="9_kjvhd"]
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
+[ext_resource type="Script" uid="uid://cid64gogxy0c4" path="res://CameraClient.cs" id="14_j4qnp"]
 
-[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter", "_fileDialog", "_btnSaveScript", "_btnLoadScript", "_btnUp", "_btnDown", "_btnLeft", "_btnRight")]
+[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_cameraClient", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter", "_fileDialog", "_btnSaveScript", "_btnLoadScript", "_btnUp", "_btnDown", "_btnLeft", "_btnRight")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -42,6 +43,7 @@ _calcWindowScene = ExtResource("5_20pc6")
 _pieceWindowScene = ExtResource("6_5vvyt")
 _accelWindowScene = ExtResource("7_c6i3y")
 _scriptHelpScene = ExtResource("8_c2ibq")
+_cameraClient = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/CameraView")
 _startSequenceButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/StartSequenceButton")
 _cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/CyclesSpinBox")
 _statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/StatusLabel")
@@ -332,10 +334,29 @@ layout_mode = 2
 text = "Камера
 "
 
-[node name="CameraPlaceholder" type="ColorRect" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
-custom_minimum_size = Vector2(400, 300)
+[node name="CameraView" type="TextureRect" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
+custom_minimum_size = Vector2(0, 350)
 layout_mode = 2
-color = Color(0.389287, 0.389287, 0.389287, 1)
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("14_j4qnp")
+
+[node name="StatusLabel" type="Label" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/CameraView"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.0
+offset_right = 20.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Нет сигнала"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox"]
 layout_mode = 2
@@ -462,7 +483,6 @@ _grid = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridW
 TargetBurner = NodePath("../MainVerticalLayout/ColumnsLayout/CenterArea/GridFrame/GridWorkspace/Burner")
 
 [node name="ScriptFileDialog" type="FileDialog" parent="."]
-ok_button_text = "Сохранить"
 cancel_button_text = "Отменить"
 access = 1
 root_subfolder = "scripts"
