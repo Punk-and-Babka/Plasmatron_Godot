@@ -45,12 +45,12 @@ _accelWindowScene = ExtResource("7_c6i3y")
 _scriptHelpScene = ExtResource("8_c2ibq")
 _cameraClient = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/CameraView")
 _startSequenceButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/StartSequenceButton")
-_cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/CyclesSpinBox")
+_cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/HBoxContainer/CyclesSpinBox")
 _statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/StatusLabel")
 _emergencyStopButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/EmergencyStopButton")
 _btnSetZero = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/_btnSetZero")
 _btnTorchToggle = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/_btnTorchToggle")
-_pauseInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseInput")
+_pauseInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/HBoxContainer2/PauseInput")
 _pauseButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseButton")
 _inputPoint0 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Input_P0")
 _inputPoint1 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Input_P1")
@@ -235,12 +235,28 @@ layout_mode = 2
 [node name="ActionsGroup" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
 layout_mode = 2
 
-[node name="CyclesSpinBox" type="SpinBox" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
 layout_mode = 2
+
+[node name="Label" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/HBoxContainer"]
+layout_mode = 2
+text = "Количество циклов:"
+
+[node name="CyclesSpinBox" type="SpinBox" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 1
 
-[node name="PauseInput" type="SpinBox" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
 layout_mode = 2
+
+[node name="Label" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/HBoxContainer2"]
+layout_mode = 2
+text = "Задержка:"
+
+[node name="PauseInput" type="SpinBox" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 1
 min_value = 0.5
 max_value = 60.0
