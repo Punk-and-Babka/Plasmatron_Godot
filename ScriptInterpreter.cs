@@ -107,10 +107,14 @@ public partial class ScriptInterpreter : Node
         ScanAndDrawVisuals(_scriptInput.Text);
     }
 
-    // --- ОБНОВЛЕННЫЙ МЕТОД ПРЕДПРОСМОТРА ---
+    // --- ОБНОВЛЕННЫЙ МЕТОД ПРЕДПРОСМОТРА (С учетом Set Zero) ---
     private void ScanAndDrawVisuals(string text)
     {
         if (string.IsNullOrWhiteSpace(text) || _grid == null) return;
+
+        // 1. ПОЛУЧАЕМ СМЕЩЕНИЕ ОТ ГОРЕЛКИ
+        // Если горелка не найдена, смещение = 0
+        Vector2 offset = TargetBurner != null ? TargetBurner.WorkOffset : Vector2.Zero;
 
         var lines = text.Split('\n');
 
@@ -122,7 +126,10 @@ public partial class ScriptInterpreter : Node
         {
             string cleanLine = line.Trim().ToUpperInvariant();
 
-            // 1. Поиск CYCLE (Желтый и Оранжевый)
+            // Пропуск комментариев
+            if (string.IsNullOrEmpty(cleanLine) || cleanLine.StartsWith("//") || cleanLine.StartsWith("#")) continue;
+
+            // 1. Поиск CYCLE
             if (cleanLine.StartsWith("CYCLE"))
             {
                 try
@@ -132,16 +139,21 @@ public partial class ScriptInterpreter : Node
 
                     if (ExtractCycleCoordinates(parts, out Vector2 a, out Vector2 b))
                     {
-                        pointsToDraw.Add(a);
+                        // ДОБАВЛЯЕМ OFFSET
+                        pointsToDraw.Add(a + offset);
                         colorsToDraw.Add(Colors.Yellow); // Точка А
 
-                        pointsToDraw.Add(b);
+                        pointsToDraw.Add(b + offset);
                         colorsToDraw.Add(Colors.Orange); // Точка Б
+
+                        // Замыкаем визуально
+                        pointsToDraw.Add(a + offset);
+                        colorsToDraw.Add(Colors.Yellow);
                     }
                 }
                 catch { }
             }
-            // 2. Поиск GO (Зеленый)
+            // 2. Поиск GO
             else if (cleanLine.StartsWith("GO"))
             {
                 try
@@ -149,13 +161,12 @@ public partial class ScriptInterpreter : Node
                     var parts = Regex.Split(cleanLine, @"\(|\)|,")
                         .Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)).Skip(1).ToArray();
 
-                    // Парсим координаты GO
                     float x = 0, y = 0;
                     if (parts.Length >= 1) x = ParseFloat(parts[0]);
                     if (parts.Length >= 2) y = ParseFloat(parts[1]);
 
-                    // Добавляем точку
-                    pointsToDraw.Add(new Vector2(x, y));
+                    // ДОБАВЛЯЕМ OFFSET
+                    pointsToDraw.Add(new Vector2(x, y) + offset);
                     colorsToDraw.Add(Colors.Green);
                 }
                 catch { }
@@ -169,7 +180,6 @@ public partial class ScriptInterpreter : Node
         }
         else
         {
-            // Очистка, если ничего не нашли
             _grid.UpdatePoints(new Vector2[] { }, new Color[] { });
         }
     }
@@ -355,8 +365,23 @@ public partial class ScriptInterpreter : Node
             ["CYCLE"] = args => HandleCycle(args),
             ["PAUSE"] = args => HandlePause(args),
             ["START"] = args => { },
-            ["END"] = args => HandleEnd()
+            ["END"] = args => HandleEnd(),
+            ["FIRE"] = args => HandleFire(args), // FIRE(1) или FIRE(0)
+            ["ARC"] = args => HandleFire(args),  // Синоним
         };
+    }
+    private void HandleFire(string[] args)
+    {
+        if (args.Length < 1) return;
+        float state = ParseFloat(args[0]);
+        bool isOn = state > 0;
+
+        // Отправляем команду горелке
+        TargetBurner?.SetTorch(isOn);
+
+        // Логируем
+        string status = isOn ? "ВКЛ" : "ВЫКЛ";
+        if (_statusLabel != null) _statusLabel.Text = $"Плазма: {status}";
     }
 
     private void HandleSpeed(string[] args)

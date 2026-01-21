@@ -16,7 +16,7 @@
 [ext_resource type="Script" uid="uid://o5ndesl0hk8n" path="res://BlackPanel.cs" id="10_5tuhn"]
 [ext_resource type="Script" uid="uid://cid64gogxy0c4" path="res://CameraClient.cs" id="14_j4qnp"]
 
-[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_cameraClient", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter", "_fileDialog", "_btnSaveScript", "_btnLoadScript", "_btnUp", "_btnDown", "_btnLeft", "_btnRight")]
+[node name="MainInterface" type="Control" node_paths=PackedStringArray("_grid", "_positionInput", "_moveButton", "_stopButton", "_burner", "_speedSlider", "_speedInput", "_lblPositionValue", "_lblSpeedValue", "_mainMenu", "settingsMenu", "helpMenu", "_cameraClient", "_startSequenceButton", "_cyclesInput", "_statusLabel", "_emergencyStopButton", "_btnSetZero", "_btnTorchToggle", "_pauseInput", "_pauseButton", "_inputPoint0", "_inputPoint1", "_inputPoint2", "_btnGetPoint0", "_btnGetPoint1", "_btnGetPoint2", "_scriptInput", "_runScriptButton", "_stopScriptButton", "_interpreter", "_fileDialog", "_btnSaveScript", "_btnLoadScript", "_btnUp", "_btnDown", "_btnLeft", "_btnRight")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -48,6 +48,8 @@ _startSequenceButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/Left
 _cyclesInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/CyclesSpinBox")
 _statusLabel = NodePath("MainVerticalLayout/ColumnsLayout/CenterArea/TopStatusBar/InfoHBox/StatusLabel")
 _emergencyStopButton = NodePath("MainVerticalLayout/ColumnsLayout/RightPanel/RightVBox/EmergencyStopButton")
+_btnSetZero = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/_btnSetZero")
+_btnTorchToggle = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/_btnTorchToggle")
 _pauseInput = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseInput")
 _pauseButton = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup/PauseButton")
 _inputPoint0 = NodePath("MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid/Input_P0")
@@ -255,6 +257,14 @@ text = "Запуск"
 layout_mode = 2
 focus_mode = 1
 text = "Пауза"
+
+[node name="_btnSetZero" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
+layout_mode = 2
+text = "Рабочий 0"
+
+[node name="_btnTorchToggle" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/ActionsGroup"]
+layout_mode = 2
+text = "Включить пламя"
 
 [node name="CenterArea" type="VBoxContainer" parent="MainVerticalLayout/ColumnsLayout"]
 layout_mode = 2

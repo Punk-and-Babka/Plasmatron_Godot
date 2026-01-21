@@ -43,6 +43,8 @@ public partial class UIController : Control
     [Export] private SpinBox _cyclesInput;
     [Export] private Label _statusLabel;
     [Export] private Button _emergencyStopButton;
+    [Export] private Button _btnSetZero;
+    [Export] private Button _btnTorchToggle;
 
     [Export] private float DefaultSpeed = 100f;
     [Export] private SpinBox _pauseInput;
@@ -224,6 +226,25 @@ public partial class UIController : Control
         if (_stopScriptButton != null)
             _stopScriptButton.Pressed += OnStopScriptPressed;
 
+        if (_btnSetZero != null)
+        {
+            _btnSetZero.Pressed += () =>
+            {
+                _burner?.SetZero();
+
+                // 3. ПРИНУДИТЕЛЬНО ПЕРЕРИСОВЫВАЕМ СКРИПТ
+                if (_scriptInput != null)
+                    ParseScriptAndDraw(_scriptInput.Text);
+            };
+        }
+
+        if (_btnTorchToggle != null)
+        {
+            // Режим переключения (Toggle)
+            _btnTorchToggle.ToggleMode = true;
+            _btnTorchToggle.Toggled += (pressed) => _burner?.SetTorch(pressed);
+        }
+
         // Подключаем стрелки управления
         SetupArrowButton(_btnUp, new Vector2(0, 1));    // Вверх
         SetupArrowButton(_btnDown, new Vector2(0, -1)); // Вниз
@@ -251,8 +272,13 @@ public partial class UIController : Control
 
     private void UpdateUIDisplay()
     {
+        if (_burner == null) return;
+
+        // Используем WorkPosition (с учетом обнуления)
+        Vector2 pos = _burner.WorkPosition;
+
         if (_lblPositionValue != null)
-            _lblPositionValue.Text = $"X: {_lastPosition.X:F1}  Y: {_lastPosition.Y:F1} мм";
+            _lblPositionValue.Text = $"X: {pos.X:F1}  Y: {pos.Y:F1} мм";
 
         if (_lblSpeedValue != null)
             _lblSpeedValue.Text = $"{_lastSpeed:F0} мм/сек";
@@ -579,14 +605,49 @@ public partial class UIController : Control
     #endregion
 
     #region Movement & Commands
+    // Вспомогательный метод для превращения строки "100; 200" в Vector2
+    private Vector2 ParseVector(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return Vector2.Zero;
 
+        // Разделяем строку по точке с запятой или запятой
+        var parts = input.Split(new char[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length >= 2)
+        {
+            // Используем InvariantCulture, чтобы точка считалась разделителем дроби (10.5), а не запятая
+            if (float.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float x) &&
+                float.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float y))
+            {
+                return new Vector2(x, y);
+            }
+        }
+        return Vector2.Zero;
+    }
     // Метод для мгновенного обновления визуала
     private void UpdateGridVisuals()
     {
         if (_grid == null) return;
-        // Берем текущие значения из полей и сразу рисуем
-        Vector2[] currentPoints = GetPointsFromInputs();
-        _grid.UpdatePoints(currentPoints, _pointColors);
+
+        // 1. Получаем текущее смещение (Set Zero)
+        Vector2 offset = _burner != null ? _burner.WorkOffset : Vector2.Zero;
+
+        // 2. Парсим координаты (Относительные)
+        Vector2 p0 = ParseVector(_inputPoint0?.Text);
+        Vector2 p1 = ParseVector(_inputPoint1?.Text);
+        Vector2 p2 = ParseVector(_inputPoint2?.Text);
+
+        // 3. Добавляем смещение для сетки (она работает в Абсолютных координатах)
+        Vector2[] points = {
+            p0 + offset,
+            p1 + offset,
+            p2 + offset
+        };
+
+        // 4. ИСПРАВЛЕНИЕ: Цвета как раньше (Зеленый, Красный, Синий)
+        Color[] colors = { Colors.Green, Colors.Red, Colors.Blue };
+
+        _grid.UpdatePoints(points, colors);
     }
 
     // Вспомогательный метод для быстрой привязки
@@ -721,13 +782,15 @@ public partial class UIController : Control
         else
             ShowError($"Ошибка чтения файла: {path}");
     }
-    // --- НОВЫЙ МЕТОД: Предпросмотр траектории ---
+    // --- Предпросмотр траектории ---
     // Обновленный метод парсинга, полностью повторяющий логику ScriptInterpreter
     private void ParseScriptAndDraw(string scriptText)
     {
         if (_grid == null) return;
 
-        // Если текст пустой - очищаем сетку
+        // 1. ПОЛУЧАЕМ ТЕКУЩЕЕ СМЕЩЕНИЕ
+        Vector2 offset = _burner != null ? _burner.WorkOffset : Vector2.Zero;
+
         if (string.IsNullOrWhiteSpace(scriptText))
         {
             _grid.UpdatePoints(new Vector2[0], new Color[0]);
@@ -736,95 +799,74 @@ public partial class UIController : Control
 
         List<Vector2> points = new List<Vector2>();
         List<Color> colors = new List<Color>();
-
         string[] lines = scriptText.Split('\n');
 
         foreach (string rawLine in lines)
         {
-            // 1. Очистка и приведение к верхнему регистру (как в интерпретаторе)
             string line = rawLine.Trim().ToUpperInvariant();
-
-            // Пропуск комментариев (// и #)
             if (string.IsNullOrEmpty(line) || line.StartsWith("//") || line.StartsWith("#")) continue;
 
-            // 2. Разбиваем строку по разделителям: скобки и запятые
-            // Это "сердце" вашего интерпретатора - позволяет понимать форматы GO(x,y) и GO x,y
             var parts = Regex.Split(line, @"\(|\)|,")
-                .Select(p => p.Trim())
-                .Where(p => !string.IsNullOrEmpty(p))
-                .ToArray();
+                .Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)).ToArray();
 
             if (parts.Length == 0) continue;
+            string command = parts[0];
+            string[] args = parts.Skip(1).ToArray();
 
-            string command = parts[0];       // Имя команды (GO, CYCLE...)
-            string[] args = parts.Skip(1).ToArray(); // Аргументы
-
-            // 3. Обработка команд
             if (command == "GO")
             {
-                // Логика: GO X или GO X, Y
                 if (args.Length >= 1)
                 {
                     float x = ParseFloatSafe(args[0]);
                     float y = (args.Length >= 2) ? ParseFloatSafe(args[1]) : 0f;
 
-                    points.Add(new Vector2(x, y));
-                    colors.Add(Colors.Green); // Зеленый для обычного движения
+                    // 2. ДОБАВЛЯЕМ СМЕЩЕНИЕ К КООРДИНАТАМ
+                    points.Add(new Vector2(x, y) + offset);
+
+                    colors.Add(Colors.Green);
                 }
             }
             else if (command == "CYCLE")
             {
-                // Логика: Ищем 2 точки (Start и End)
-                // Вариант А: X1, Y1, X2, Y2, Count (5 аргументов)
-                if (args.Length >= 5)
+                if (args.Length >= 5) // X1, Y1, X2, Y2, Count
                 {
                     float x1 = ParseFloatSafe(args[0]);
                     float y1 = ParseFloatSafe(args[1]);
                     float x2 = ParseFloatSafe(args[2]);
                     float y2 = ParseFloatSafe(args[3]);
 
-                    // 1. Старт
-                    points.Add(new Vector2(x1, y1));
+                    // 2. ДОБАВЛЯЕМ СМЕЩЕНИЕ
+                    points.Add(new Vector2(x1, y1) + offset);
                     colors.Add(Colors.Yellow);
 
-                    // 2. Конец
-                    points.Add(new Vector2(x2, y2));
+                    points.Add(new Vector2(x2, y2) + offset);
                     colors.Add(Colors.Orange);
 
-                    // 3. ИСПРАВЛЕНИЕ: Визуально замыкаем цикл (возврат в А)
-                    points.Add(new Vector2(x1, y1));
+                    // Замыкаем
+                    points.Add(new Vector2(x1, y1) + offset);
                     colors.Add(Colors.Yellow);
                 }
-                // Вариант Б: X1, X2, Count (Y=0)
-                else if (args.Length >= 3)
+                else if (args.Length >= 3) // X1, X2, Count (Y=0)
                 {
                     float x1 = ParseFloatSafe(args[0]);
                     float x2 = ParseFloatSafe(args[1]);
 
-                    points.Add(new Vector2(x1, 0));
+                    // 2. ДОБАВЛЯЕМ СМЕЩЕНИЕ
+                    // Тут Y=0 по скрипту, значит в реальности Y = offset.Y
+                    points.Add(new Vector2(x1, 0) + offset);
                     colors.Add(Colors.Yellow);
 
-                    points.Add(new Vector2(x2, 0));
+                    points.Add(new Vector2(x2, 0) + offset);
                     colors.Add(Colors.Orange);
 
-                    // 3. ИСПРАВЛЕНИЕ: Визуально замыкаем цикл
-                    points.Add(new Vector2(x1, 0));
+                    points.Add(new Vector2(x1, 0) + offset);
                     colors.Add(Colors.Yellow);
                 }
             }
         }
 
-        // 4. Отрисовка
-        if (points.Count > 0)
-        {
-            _grid.UpdatePoints(points, colors);
-            GD.Print($"[Preview] Отрисовано {points.Count} точек.");
-        }
-        else
-        {
-            // Если ничего не нашли (пустой скрипт или одни комменты) - чистим сетку
-            _grid.UpdatePoints(new Vector2[0], new Color[0]);
-        }
+        if (points.Count > 0) _grid.UpdatePoints(points, colors);
+        else _grid.UpdatePoints(new Vector2[0], new Color[0]);
     }
 
     // Вспомогательный безопасный парсер (чтобы не дублировать try-catch)
@@ -895,12 +937,14 @@ public partial class UIController : Control
     private void SetInputFromBurner(LineEdit targetInput)
     {
         if (_burner == null || targetInput == null) return;
-        Vector2 pos = _burner.PositionMM;
 
-        // БЫЛО: targetInput.Text = $"{pos.X:F0}; {pos.Y:F0}";
-        // СТАЛО: Разделитель - запятая
-        targetInput.Text = $"{pos.X:F0}, {pos.Y:F0}";
+        // ИСПРАВЛЕНИЕ: Берем WorkPosition (координаты с учетом Set Zero)
+        Vector2 pos = _burner.WorkPosition;
 
+        // Форматируем красиво, без лишних знаков
+        targetInput.Text = $"{pos.X:F1}; {pos.Y:F1}";
+
+        // Сразу обновляем визуализацию на сетке
         UpdateGridVisuals();
     }
 
@@ -998,11 +1042,29 @@ public partial class UIController : Control
 
     private void OnStartSequencePressed()
     {
-        Vector2[] points = GetPointsFromInputs();
+        if (_burner == null) return;
 
-        _grid?.UpdatePoints(points, _pointColors);
+        // 1. Считываем данные (Относительные координаты)
+        Vector2 p0 = ParseVector(_inputPoint0?.Text);
+        Vector2 p1 = ParseVector(_inputPoint1?.Text);
+        Vector2 p2 = ParseVector(_inputPoint2?.Text);
 
-        _burner?.StartAutoSequence(points, (int)_cyclesInput.Value);
+        // 2. Читаем количество циклов из SpinBox
+        int cycles = 1;
+        if (_cyclesInput != null)
+        {
+            // У SpinBox берем свойство Value (оно double, поэтому приводим к int)
+            cycles = (int)_cyclesInput.Value;
+        }
+
+        // 3. Обновляем визуал ПРАВИЛЬНО (с учетом Offset и цветов)
+        UpdateGridVisuals();
+
+        // 4. Запускаем автоматику
+        // Горелке мы передаем "чистые" (относительные) точки
+        _burner.StartAutoSequence(new[] { p0, p1, p2 }, cycles);
+
+        UpdateStatus($"Запуск цикла P0-P1-P2 ({cycles} раз)...");
     }
 
     private void OnPauseChanged(double v) { if (_burner != null) _burner.PauseDuration = (float)v; }

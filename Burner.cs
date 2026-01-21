@@ -229,10 +229,16 @@ public partial class Burner : Node2D
     }
 
     // --- УПРАВЛЕНИЕ ---
-    public void MoveToPosition(Vector2 target)
+    // target - это координата в системе пользователя (относительно Set Zero)
+    public void MoveToPosition(Vector2 userTarget)
     {
-        float x = Mathf.Clamp(target.X, 0, _grid?.RealWorldWidthMM ?? 1000);
-        float y = Mathf.Clamp(target.Y, 0, _grid?.RealWorldHeightMM ?? 1000);
+        // Переводим в машинные координаты
+        Vector2 machineTarget = userTarget + _workOffset;
+
+        // Проверяем лимиты по МАШИННЫМ координатам
+        float x = Mathf.Clamp(machineTarget.X, 0, _grid?.RealWorldWidthMM ?? 1000);
+        float y = Mathf.Clamp(machineTarget.Y, 0, _grid?.RealWorldHeightMM ?? 1000);
+
         TargetPosition = new Vector2(x, y);
 
         if (!_isManualPaused)
@@ -274,18 +280,21 @@ public partial class Burner : Node2D
         ResetSequenceState();
         if (points.Length < 3) return;
 
-        _sequencePoints = points;
+        _sequencePoints = points; // Это Относительные точки (User coords)
         _cyclesRemaining = cycles;
         _baseSpeed = MaxSpeedMM;
         _isAutoSequenceActive = true;
 
-        float distToP0 = PositionMM.DistanceTo(_sequencePoints[0]);
+        // ИСПРАВЛЕНИЕ: Сравниваем расстояние используя WorkPosition (Относительную позицию горелки)
+        // так как _sequencePoints[0] тоже относительная.
+        float distToP0 = WorkPosition.DistanceTo(_sequencePoints[0]);
 
         if (distToP0 < _stopRadius)
         {
-            GD.Print("Уже в точке 0.");
+            GD.Print("Уже в точке P0 (Relative).");
             _currentTargetIndex = 1;
             SetMovementSpeed(_fastSpeed);
+            // MoveToPosition сам добавит Offset внутри себя, так что подаем "чистую" точку
             MoveToPosition(_sequencePoints[1]);
         }
         else
@@ -408,6 +417,48 @@ public partial class Burner : Node2D
         ResetSequenceState();
         SetMovementSpeed(100f);
     }
+    // Флаг состояния плазмы
+    public bool IsTorchOn { get; private set; }
+    public Vector2 WorkOffset => _workOffset;
+
+    // Смещение координат (разница между машинным нулем и рабочим нулем)
+    private Vector2 _workOffset = Vector2.Zero;
+
+    // Публичное свойство для отображения (Рабочие координаты)
+    public Vector2 WorkPosition => PositionMM - _workOffset;
+
+    // Событие обновления состояния факела (для UI)
+    public event Action<bool> TorchStateChanged;
+
+    // Метод: Установить текущую позицию как (0,0)
+    public void SetZero()
+    {
+        _workOffset = PositionMM;
+
+        // Обновляем UI, чтобы цифры стали по нулям
+        PositionChanged?.Invoke(WorkPosition);
+        GD.Print($"New Zero Set. Absolute: {PositionMM}, Offset: {_workOffset}");
+    }
+
+    // Метод: Вернуться в машинный ноль (абсолютный)
+    public void GoHome()
+    {
+        MoveToPosition(Vector2.Zero); // Едем в физический 0
+    }
+
+    // Метод: Переключение плазмы
+    public void SetTorch(bool on)
+    {
+        IsTorchOn = on;
+        TorchStateChanged?.Invoke(on);
+
+        // Отправляем M-коды (стандарт G-code: M3 = вкл, M5 = выкл)
+        // Или ваши кастомные команды
+        string cmd = on ? "M3" : "M5";
+        _uiController?.SendCommand(cmd);
+
+        QueueRedraw(); // Перерисовать, чтобы показать огонь
+    }
 
     // ==========================================
     // ЛОГИКА ОТРИСОВКИ
@@ -435,6 +486,14 @@ public partial class Burner : Node2D
         // СЛОЙ 2: Корпус
         DrawRect(bodyRect, BodyColor, true);
         DrawRect(bodyRect, new Color(0.5f, 0.5f, 0.5f), false, 1);
+
+        // РИСУЕМ ПЛАЗМУ (если включена)
+        if (IsTorchOn)
+        {
+            // Рисуем яркий круг под соплом
+            DrawCircle(tipScreenPos, 15f, Colors.Cyan); // Ядро
+            DrawCircle(tipScreenPos, 25f, new Color(0, 1, 1, 0.4f)); // Ореол
+        }
 
         // СЛОЙ 3: Прицел (Крест) - Увеличен размер
         float crossSize = 30f;
