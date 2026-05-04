@@ -40,7 +40,7 @@ public partial class ScriptHelp : Window
             "Пример: [code]PAUSE(2.5)[/code]\n\n" +
 
             "[b][color=yellow]CYCLE(x1, y1, x2, y2, N, [T])[/color][/b]\n" +
-            "Цикл туда-обратно N раз.\n" +
+            "Цикл движения между точками N раз.\n" +
             "Последняя цифра [T] — пауза в точках (сек).\n" +
             "Она необязательна (по умолч. 0.5 сек).\n\n" +
 

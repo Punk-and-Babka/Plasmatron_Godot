@@ -167,14 +167,21 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
-columns = 3
+columns = 2
 
 [node name="Lbl_Name0" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
 text = "Точка 0"
 horizontal_alignment = 1
+
+[node name="Btn_Get0" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 1
+text = "Точка 0"
 
 [node name="Input_P0" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
@@ -183,18 +190,19 @@ focus_mode = 1
 placeholder_text = "X; Y"
 alignment = 1
 
-[node name="Btn_Get0" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 1
-text = "Точка 0"
-
 [node name="Lbl_Name1" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
 text = "Точка 1"
 horizontal_alignment = 1
+
+[node name="Btn_Get1" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 1
+text = "Точка 1"
 
 [node name="Input_P1" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
@@ -203,18 +211,19 @@ focus_mode = 1
 placeholder_text = "X; Y"
 alignment = 1
 
-[node name="Btn_Get1" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 1
-text = "Точка 1"
-
 [node name="Lbl_Name2" type="Label" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
 text = "Точка 2"
 horizontal_alignment = 1
+
+[node name="Btn_Get2" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 1
+text = "Точка 2"
 
 [node name="Input_P2" type="LineEdit" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
 layout_mode = 2
@@ -222,12 +231,6 @@ size_flags_horizontal = 3
 focus_mode = 1
 placeholder_text = "X; Y"
 alignment = 1
-
-[node name="Btn_Get2" type="Button" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox/PointsGrid"]
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 1
-text = "Точка 2"
 
 [node name="HSeparator2" type="HSeparator" parent="MainVerticalLayout/ColumnsLayout/LeftPanel/LeftVBox"]
 layout_mode = 2

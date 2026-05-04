@@ -350,9 +350,11 @@ public partial class ScriptInterpreter : Node
     {
         var newQueue = new Queue<string>();
         newQueue.Enqueue(cmd);
-        foreach (var c in _commandQueue) newQueue.Enqueue(c);
+
+        foreach (var c in _commandQueue)
+            newQueue.Enqueue(c);
+
         _commandQueue = newQueue;
-        _commandCounter++;
     }
 
     // --- ОБРАБОТЧИКИ КОМАНД ---
