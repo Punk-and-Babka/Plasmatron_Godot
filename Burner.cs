@@ -150,6 +150,13 @@ public partial class Burner : Node2D
     // --- ИСПРАВЛЕННАЯ ФИЗИКА И ВВОД (HARD STOP) ---
     private void HandlePhysics(float delta)
     {
+        // Проверка коллизий
+        var otherBurners = GetTree().GetNodesInGroup("burners");
+        if (otherBurners.Count > 1)
+        {
+            // Пока просто проверяем количество
+        }
+
         // 1. ЖЕЛЕЗОБЕТОННАЯ ПАУЗА
         if (_isManualPaused)
         {
