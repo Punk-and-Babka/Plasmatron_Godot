@@ -597,7 +597,7 @@ public partial class UIController : Control
             if (_serialPort != null && _serialPort.IsOpen) _serialPort.Close();
             _serialPort = new SerialPort(_portWindow.SelectedPort, _portWindow.SelectedBaudRate, Parity.None, 8, StopBits.One);
             _serialPort.Open();
-            _serialPort.DataReceived += (s, e) => { try { CallDeferred(nameof(ProcessIncoming), _serialPort.ReadLine()); } catch { } };
+            _serialPort.DataReceived += (s, e) => { try { ProcessIncoming(_serialPort.ReadLine()); } catch { } };
         }
         catch (Exception e) { ShowError(e.Message); }
     }
@@ -981,11 +981,9 @@ public partial class UIController : Control
     private void SubmitSpeedInput(string text)
     {
         // Оставляем только цифры, точки и запятые
-        string cleanText = Regex.Replace(text, @"[^\d.,]", "").Replace(",", ".");
-
+        string cleanText = text.Replace(",", ".");
         if (float.TryParse(cleanText, NumberStyles.Any, CultureInfo.InvariantCulture, out float val))
         {
-            // Если число валидное - применяем его
             OnSpeedInputChanged(val);
         }
         // Если число не валидное - ничего не делаем, FocusExited потом вернет старое значение

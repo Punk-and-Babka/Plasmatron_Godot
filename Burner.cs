@@ -177,7 +177,6 @@ public partial class Burner : Node2D
 
             if (dist < _stopRadius)
             {
-                PositionMM = TargetPosition;
                 _currentVelocity = Vector2.Zero;
                 StopAutoMovement();
                 return;
