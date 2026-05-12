@@ -94,16 +94,19 @@ public partial class ScriptInterpreter : Node
             _statusLabel.Text = "Сброс выполнен";
             _statusLabel.Modulate = Colors.White; // Возвращаем белый цвет
         }
-
+        if (_scriptInput != null) _scriptInput.TextChanged += OnScriptTextChanged;
         GD.Print("[ScriptInterpreter] Hard Reset performed.");
     }
 
     // --- ЛОГИКА ЖИВОГО ПРЕДПРОСМОТРА ---
     private void OnScriptTextChanged()
     {
-        // Если скрипт выполняется, не мешаем ему
         if (_state == InterpreterState.Running) return;
         if (_scriptInput == null) return;
+
+        // Автоматически приводим весь код к верхнему регистру
+        _scriptInput.Text = _scriptInput.Text.ToUpperInvariant();
+
         ScanAndDrawVisuals(_scriptInput.Text);
     }
 
@@ -534,8 +537,7 @@ public partial class ScriptInterpreter : Node
 
     private float ParseFloat(string input)
     {
-        input = input.Replace(',', '.');
-        if (float.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out float result))
+        if (float.TryParse(input, NumberStyles.Any, null, out float result))
             return result;
         throw new FormatException($"Число '{input}' некорректно");
     }
@@ -559,14 +561,6 @@ public partial class ScriptInterpreter : Node
             _commandCounter++;
         }
     }
-
-    //private void UpdateGridPoints(Vector2 a, Vector2 b)
-    //{
-    //    if (_grid == null) return;
-    //    Vector2[] pts = { a, b, Vector2.Zero };
-    //    Color[] cols = { Colors.Yellow, Colors.Orange, Colors.Transparent };
-    //    _grid.UpdatePoints(pts, cols);
-    //}
 
     private void ToggleButtons(bool isRunning)
     {
